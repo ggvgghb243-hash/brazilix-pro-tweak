@@ -25,10 +25,12 @@ jobs:
 
       - name: Setup iOS SDK
         run: |
-          curl -LO https://github.com/theos/sdks/archive/master.zip
-          unzip -q master.zip
-          cp -r sdks-master/*.sdk ~/theos/sdks/
-          rm -rf master.zip sdks-master
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/theos/sdks.git ~/theos-sdks
+          cd ~/theos-sdks
+          git sparse-checkout set iPhoneOS16.5.sdk
+          cp -R iPhoneOS16.5.sdk ~/theos/sdks/
+          cd ..
+          rm -rf ~/theos-sdks
 
       - name: Build Package
         run: |
