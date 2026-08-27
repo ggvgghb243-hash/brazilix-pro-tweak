@@ -25,7 +25,10 @@ jobs:
 
       - name: Setup iOS SDK
         run: |
-          git clone --quiet --depth=1 https://github.com/theos/sdks.git ~/theos/sdks
+          curl -LO https://github.com/theos/sdks/archive/master.zip
+          unzip -q master.zip
+          cp -r sdks-master/*.sdk ~/theos/sdks/
+          rm -rf master.zip sdks-master
 
       - name: Build Package
         run: |
