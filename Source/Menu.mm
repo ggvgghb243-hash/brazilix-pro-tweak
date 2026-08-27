@@ -108,6 +108,7 @@
 @property (nonatomic, strong) CustomCheckbox *espMainCheck;
 @property (nonatomic, strong) CustomCheckbox *boxCheck;
 @property (nonatomic, strong) CustomCheckbox *lineCheck;
+@property (nonatomic, strong) CustomCheckbox *healthCheck;
 @property (nonatomic, strong) CustomCheckbox *nameCheck;
 @property (nonatomic, strong) CustomCheckbox *distCheck;
 @property (nonatomic, strong) CustomCheckbox *skelCheck;
