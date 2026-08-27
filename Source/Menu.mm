@@ -254,9 +254,12 @@ extern "C" void initAntiCheatBypass();
     _headerTitleLabel.textColor = UI_COLOR_ACCENT;
     [headerView addSubview:_headerTitleLabel];
     
-    _headerSubLabel = [[UILabel alloc] initWithFrame:CGRectMake(108, 10, 150, 18)];
-    _headerSubLabel.font = [UIFont systemFontOfSize:10 weight:UIFontWeightRegular];
+    _headerSubLabel = [[UILabel alloc] initWithFrame:CGRectMake(95, 10, contentW - 100, 18)];
+    _headerSubLabel.font = [UIFont systemFontOfSize:9.5f weight:UIFontWeightMedium];
     _headerSubLabel.textColor = UI_COLOR_TEXT_MUTED;
+    _headerSubLabel.adjustsFontSizeToFitWidth = YES;
+    _headerSubLabel.minimumScaleFactor = 0.7f;
+    _headerSubLabel.text = @"Fluorite Pro by-  AMAN& LORD AIZEN";
     [headerView addSubview:_headerSubLabel];
     
     // --- 3. Content Tabs Container ---
@@ -630,15 +633,15 @@ extern "C" void initAntiCheatBypass();
     _currentTabIndex = index;
     
     NSArray *headers = @[
-        @{@"icon": @"🎯", @"title": @"AIMBOT", @"sub": @"Automatically aim at enemies."},
-        @{@"icon": @"👁", @"title": @"VISUALS", @"sub": @"Visual improvements."},
-        @{@"icon": @"📦", @"title": @"MISC", @"sub": @"Miscellaneous options."},
-        @{@"icon": @"⚙", @"title": @"SETTINGS", @"sub": @"Configure options."}
+        @{@"icon": @"🎯", @"title": @"AIMBOT"},
+        @{@"icon": @"👁", @"title": @"VISUALS"},
+        @{@"icon": @"📦", @"title": @"MISC"},
+        @{@"icon": @"⚙", @"title": @"SETTINGS"}
     ];
     
     _headerIconLabel.text = headers[index][@"icon"];
     _headerTitleLabel.text = headers[index][@"title"];
-    _headerSubLabel.text = headers[index][@"sub"];
+    _headerSubLabel.text = @"Fluorite Pro by-  AMAN& LORD AIZEN";
     
     for (int i = 0; i < _tabButtons.count; i++) {
         UIButton *btn = _tabButtons[i];
