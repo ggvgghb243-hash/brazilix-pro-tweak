@@ -6,8 +6,8 @@
 #import <mach-o/dyld.h>
 
 // 1. Hooking stat/lstat to hide tweak and common jailbreak files
-static int (*orig_stat)(const char *restrict path, struct stat *restrict buf);
-static int my_stat(const char *restrict path, struct stat *restrict buf) {
+static int (*orig_stat)(const char *path, struct stat *buf);
+static int my_stat(const char *path, struct stat *buf) {
     if (path == NULL) return orig_stat(path, buf);
     NSString *filePath = [NSString stringWithUTF8String:path];
     if ([filePath containsString:@"Brazilix"] || 
@@ -21,8 +21,8 @@ static int my_stat(const char *restrict path, struct stat *restrict buf) {
     return orig_stat(path, buf);
 }
 
-static int (*orig_lstat)(const char *restrict path, struct stat *restrict buf);
-static int my_lstat(const char *restrict path, struct stat *restrict buf) {
+static int (*orig_lstat)(const char *path, struct stat *buf);
+static int my_lstat(const char *path, struct stat *buf) {
     if (path == NULL) return orig_lstat(path, buf);
     NSString *filePath = [NSString stringWithUTF8String:path];
     if ([filePath containsString:@"Brazilix"] || 
