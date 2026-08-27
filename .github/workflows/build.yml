@@ -18,6 +18,10 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install Build Dependencies
+        run: |
+          brew install ldid-procursus dpkg
+
       - name: Setup Theos
         run: |
           git clone --recursive https://github.com/theos/theos.git ~/theos
