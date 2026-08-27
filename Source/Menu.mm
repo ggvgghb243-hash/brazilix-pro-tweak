@@ -1,4 +1,4 @@
-#import <UIKit/UIKit.h>
+﻿#import <UIKit/UIKit.h>
 #import <QuartzCore/QuartzCore.h>
 #import <CoreGraphics/CoreGraphics.h>
 #import <Foundation/Foundation.h>
@@ -29,7 +29,6 @@
 @property (nonatomic, strong) UIButton *boxESPButton;
 @property (nonatomic, strong) UIButton *linesESPButton;
 @property (nonatomic, strong) UIButton *nameButton;
-@property (nonatomic, strong) UIButton *healthButton;
 @property (nonatomic, strong) UIButton *distanceButton;
 @property (nonatomic, strong) UIButton *skeletonButton;
 @property (nonatomic, strong) UIButton *countButton;
@@ -41,24 +40,36 @@
 @implementation BrazilixMenu
 
 static BrazilixMenu *extraInfo;
-static BOOL MenDeal;
+static BOOL MenDeal = NO;
 UIWindow *mainWindow;
 game_sdk_t *game_sdk = new game_sdk_t();
 
 + (void)load {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    // Wait until game UI and UnityFramework are loaded
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self waitForUnityFramework];
+    });
+}
+
++ (void)waitForUnityFramework {
+    static int retries = 0;
+    if (getAbsoluteAddress("UnityFramework", 0) != 0 || retries > 30) {
         mainWindow = [UIApplication sharedApplication].keyWindow;
-        extraInfo = [BrazilixMenu new];
-        
-        static bool sdkInitialized = false;
-        if (!sdkInitialized) {
-            game_sdk->init();
-            sdkInitialized = true;
+        if (!mainWindow) {
+            NSArray *windows = [UIApplication sharedApplication].windows;
+            if (windows.count > 0) mainWindow = windows.firstObject;
         }
         
+        extraInfo = [BrazilixMenu new];
+        game_sdk->init();
         [extraInfo setupDisplayLink];
         [extraInfo initTapGes];
-    });
+    } else {
+        retries++;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [self waitForUnityFramework];
+        });
+    }
 }
 
 - (void)setupDisplayLink {
@@ -67,8 +78,16 @@ game_sdk_t *game_sdk = new game_sdk_t();
 }
 
 - (void)setupMenu {
+    if (!mainWindow) {
+        mainWindow = [UIApplication sharedApplication].keyWindow;
+        if (!mainWindow) {
+            NSArray *windows = [UIApplication sharedApplication].windows;
+            if (windows.count > 0) mainWindow = windows.firstObject;
+        }
+    }
+    
     CGFloat menuWidth = 220;
-    CGFloat menuHeight = 320;
+    CGFloat menuHeight = 280;
     CGFloat x = (kWidth - menuWidth) * 0.5f;
     CGFloat y = (kHeight - menuHeight) * 0.5f;
     
@@ -84,16 +103,16 @@ game_sdk_t *game_sdk = new game_sdk_t();
     UIPanGestureRecognizer *panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
     [_menuView addGestureRecognizer:panGesture];
     
-    [mainWindow addSubview:_menuView];
+    if (mainWindow) [mainWindow addSubview:_menuView];
     
     _titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 10, menuWidth, 25)];
-    _titleLabel.text = @"BRAZILIX OPTIMIZED";
+    _titleLabel.text = @"BRAZILIX PRO";
     _titleLabel.textColor = COLOR_TEXT;
     _titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightBold];
     _titleLabel.textAlignment = NSTextAlignmentCenter;
     [_menuView addSubview:_titleLabel];
     
-    _scrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 45, menuWidth, menuHeight - 55)];
+    _scrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 40, menuWidth, menuHeight - 45)];
     _scrollView.showsVerticalScrollIndicator = NO;
     [_menuView addSubview:_scrollView];
     
@@ -103,29 +122,24 @@ game_sdk_t *game_sdk = new game_sdk_t();
     CGFloat btnX = 12;
     CGFloat btnW = menuWidth - 24;
     
-    _enableCheatsButton = [self createButtonWithTitle:@"Master Switch" frame:CGRectMake(btnX, btnY, btnW, btnH)];
+    _enableCheatsButton = [self createButtonWithTitle:@"ESP Master Switch" frame:CGRectMake(btnX, btnY, btnW, btnH)];
     [_enableCheatsButton addTarget:self action:@selector(toggleEnable) forControlEvents:UIControlEventTouchUpInside];
     [_scrollView addSubview:_enableCheatsButton];
     btnY += btnH + btnGap;
     
-    _boxESPButton = [self createButtonWithTitle:@"Box" frame:CGRectMake(btnX, btnY, btnW, btnH)];
+    _boxESPButton = [self createButtonWithTitle:@"2D Box" frame:CGRectMake(btnX, btnY, btnW, btnH)];
     [_boxESPButton addTarget:self action:@selector(toggleBox) forControlEvents:UIControlEventTouchUpInside];
     [_scrollView addSubview:_boxESPButton];
     btnY += btnH + btnGap;
     
-    _linesESPButton = [self createButtonWithTitle:@"Lines" frame:CGRectMake(btnX, btnY, btnW, btnH)];
+    _linesESPButton = [self createButtonWithTitle:@"Snaplines" frame:CGRectMake(btnX, btnY, btnW, btnH)];
     [_linesESPButton addTarget:self action:@selector(toggleLines) forControlEvents:UIControlEventTouchUpInside];
     [_scrollView addSubview:_linesESPButton];
     btnY += btnH + btnGap;
     
-    _nameButton = [self createButtonWithTitle:@"Names" frame:CGRectMake(btnX, btnY, btnW, btnH)];
+    _nameButton = [self createButtonWithTitle:@"Player Names" frame:CGRectMake(btnX, btnY, btnW, btnH)];
     [_nameButton addTarget:self action:@selector(toggleName) forControlEvents:UIControlEventTouchUpInside];
     [_scrollView addSubview:_nameButton];
-    btnY += btnH + btnGap;
-    
-    _healthButton = [self createButtonWithTitle:@"Health" frame:CGRectMake(btnX, btnY, btnW, btnH)];
-    [_healthButton addTarget:self action:@selector(toggleHealth) forControlEvents:UIControlEventTouchUpInside];
-    [_scrollView addSubview:_healthButton];
     btnY += btnH + btnGap;
     
     _distanceButton = [self createButtonWithTitle:@"Distance" frame:CGRectMake(btnX, btnY, btnW, btnH)];
@@ -147,6 +161,7 @@ game_sdk_t *game_sdk = new game_sdk_t();
 }
 
 - (void)handlePan:(UIPanGestureRecognizer *)pan {
+    if (!mainWindow) return;
     CGPoint translation = [pan translationInView:mainWindow];
     if (pan.state == UIGestureRecognizerStateBegan) {
         _lastPoint = _menuView.center;
@@ -166,19 +181,24 @@ game_sdk_t *game_sdk = new game_sdk_t();
 }
 
 - (void)updateMenu {
-    _menuView.hidden = !MenDeal;
+    if (_menuView) _menuView.hidden = !MenDeal;
     
-    get_players();
+    if (game_sdk && game_sdk->isReady && Vars.Enable) {
+        get_players();
+    } else {
+        [[ESPRenderer sharedInstance] clearDrawings];
+    }
 
-    if (!MenDeal) return;
+    if (!MenDeal || !_menuView) return;
 
     [self updateButton:_enableCheatsButton forState:Vars.Enable];
     
-    NSArray *buttons = @[_boxESPButton, _linesESPButton, _nameButton, _healthButton, _distanceButton, _skeletonButton, _countButton];
-    NSArray *states = @[@(Vars.Box), @(Vars.lines), @(Vars.Name), @(Vars.Health), @(Vars.Distance), @(Vars.skeleton), @(Vars.counts)];
+    NSArray *buttons = @[_boxESPButton, _linesESPButton, _nameButton, _distanceButton, _skeletonButton, _countButton];
+    NSArray *states = @[@(Vars.Box), @(Vars.lines), @(Vars.Name), @(Vars.Distance), @(Vars.skeleton), @(Vars.counts)];
     
     for (int i = 0; i < buttons.count; i++) {
         UIButton *btn = buttons[i];
+        if (!btn) continue;
         BOOL state = [states[i] boolValue];
         btn.alpha = Vars.Enable ? 1.0f : 0.4f;
         btn.userInteractionEnabled = Vars.Enable;
@@ -187,6 +207,7 @@ game_sdk_t *game_sdk = new game_sdk_t();
 }
 
 - (void)updateButton:(UIButton *)button forState:(BOOL)state {
+    if (!button) return;
     if (state) {
         button.backgroundColor = [COLOR_ACCENT colorWithAlphaComponent:0.3];
         [button setTitleColor:COLOR_ACCENT forState:UIControlStateNormal];
@@ -198,66 +219,72 @@ game_sdk_t *game_sdk = new game_sdk_t();
 
 #pragma mark - Toggle Actions
 - (void)toggleEnable { Vars.Enable = !Vars.Enable; }
-- (void)toggleBox { if (Vars.Enable) Vars.Box = !Vars.Box; }
-- (void)toggleLines { if (Vars.Enable) Vars.lines = !Vars.lines; }
-- (void)toggleName { if (Vars.Enable) Vars.Name = !Vars.Name; }
-- (void)toggleHealth { if (Vars.Enable) Vars.Health = !Vars.Health; }
-- (void)toggleDistance { if (Vars.Enable) Vars.Distance = !Vars.Distance; }
-- (void)toggleSkeleton { if (Vars.Enable) Vars.skeleton = !Vars.skeleton; }
-- (void)toggleCount { if (Vars.Enable) Vars.counts = !Vars.counts; }
+- (void)toggleBox { Vars.Box = !Vars.Box; }
+- (void)toggleLines { Vars.lines = !Vars.lines; }
+- (void)toggleName { Vars.Name = !Vars.Name; }
+- (void)toggleDistance { Vars.Distance = !Vars.Distance; }
+- (void)toggleSkeleton { Vars.skeleton = !Vars.skeleton; }
+- (void)toggleCount { Vars.counts = !Vars.counts; }
 
-- (void)closeMenu { MenDeal = false; }
+- (void)closeMenu {
+    MenDeal = NO;
+    if (_menuView) _menuView.hidden = YES;
+}
 
-#pragma mark - Gesture Handling
 - (void)initTapGes {
-    UITapGestureRecognizer *tap1 = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(openMenu)];
-    tap1.numberOfTapsRequired = 2;
-    tap1.numberOfTouchesRequired = 3;
-    [mainWindow addGestureRecognizer:tap1];
-    
-    UITapGestureRecognizer *tap2 = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(closeMenu)];
-    tap2.numberOfTapsRequired = 2;
+    UITapGestureRecognizer *tap2 = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(openMenu)];
     tap2.numberOfTouchesRequired = 2;
-    [mainWindow addGestureRecognizer:tap2];
+    if (mainWindow) [mainWindow addGestureRecognizer:tap2];
 }
 
 - (void)openMenu {
     if (!_menuView) [self setupMenu];
-    MenDeal = true;
+    MenDeal = !MenDeal;
+    if (_menuView) _menuView.hidden = !MenDeal;
 }
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    if (!MenDeal) return;
+    if (!MenDeal || !_menuView) return;
     UITouch *touch = [touches anyObject];
-    if (!CGRectContainsPoint(_menuView.frame, [touch locationInView:mainWindow])) [self closeMenu];
+    if (mainWindow && !CGRectContainsPoint(_menuView.frame, [touch locationInView:mainWindow])) {
+        [self closeMenu];
+    }
 }
 
 @end
 
-// OB53 OFFSETS - UnityFramework
+// ===== UPDATED OFFSETS FROM DUMP (1).CS =====
 void game_sdk_t::init()
 {
-    this->Curent_Match = (void *(*)())getRealOffset(0x4E355B0);
-    this->GetLocalPlayer = (void *(*)(void *))getRealOffset(0x4C5A64C);
-    this->get_position = (Vector3(*)(void *))getRealOffset(0x8552BAC);
-    this->Component_GetTransform = (void *(*)(void *))getRealOffset(0x854060C);
-    this->get_camera = (void *(*)())getRealOffset(0x84E7148);
-    this->WorldToScreenPoint = (Vector3(*)(void *, Vector3))getRealOffset(0x84E6AC8);
-    this->GetForward = (Vector3(*)(void *))getRealOffset(0x85534CC);
-    this->get_isLocalTeam = (bool (*)(void *))getRealOffset(0x4A38D90);
-    this->get_IsDieing = (bool (*)(void *))getRealOffset(0x4A02EA8);
-    this->get_MaxHP = (int (*)(void *))getRealOffset(0x4A8489C);
-    this->GetHp = (int (*)(void *))getRealOffset(0x4A8478C);
-    this->name = (monoString * (*)(void *player))getRealOffset(0x4A16D38);
+    uintptr_t base = getAbsoluteAddress("UnityFramework", 0);
+    if (base == 0) {
+        this->isReady = false;
+        return;
+    }
 
-    this->_GetHeadPositions = (void *(*)(void *))getRealOffset(0x4AA1A28);
-    this->_newHipMods = (void *(*)(void *))getRealOffset(0x4AA1BD8);
-    this->_GetLeftAnkleTF = (void *(*)(void *))getRealOffset(0x4AA2028);
-    this->_GetRightAnkleTF = (void *(*)(void *))getRealOffset(0x4AA2134);
-    this->_GetLeftToeTF = (void *(*)(void *))getRealOffset(0x4AA2240);
-    this->_GetRightToeTF = (void *(*)(void *))getRealOffset(0x4AA234C);
-    this->_getLeftHandTF = (void *(*)(void *))getRealOffset(0x4A1B9B4);
-    this->_getRightHandTF = (void *(*)(void *))getRealOffset(0x4A1BAB8);
-    this->_getLeftForeArmTF = (void *(*)(void *))getRealOffset(0x4A1BBBC);
-    this->_getRightForeArmTF = (void *(*)(void *))getRealOffset(0x4A1BCC0);
+    // UnityEngine Offsets (from dump (1).cs)
+    this->get_camera = (void *(*)())getRealOffset(0x918E4D0);             // Camera.get_main
+    this->WorldToScreenPoint = (Vector3(*)(void *, Vector3))getRealOffset(0x918DDDC); // Camera.WorldToScreenPoint
+    this->Component_GetTransform = (void *(*)(void *))getRealOffset(0x91E7DD0); // Component.get_transform
+    this->get_position = (Vector3(*)(void *))getRealOffset(0x91FA058);   // Transform.get_position
+    this->GetForward = (Vector3(*)(void *))getRealOffset(0x91FAA50);     // Transform.get_forward
+
+    // Player Methods (from dump (1).cs: Player.LPMLOHBLCCG)
+    this->name = (monoString *(*)(void *))getRealOffset(0x53EC2B8);       // Player.get_NickName
+    this->get_IsDieing = (bool (*)(void *))getRealOffset(0x53D6C7C);     // Player.get_IsDieing
+    this->get_isLocalTeam = (bool (*)(void *))getRealOffset(0x54101A8);  // Player.IsLocalTeammate
+
+    // Skeleton Bone Transforms (from dump (1).cs: Player.LPMLOHBLCCG)
+    this->GetHeadTF = (void *(*)(void *))getRealOffset(0x54828CC);       // Player.GetHeadTF
+    this->GetHipTF = (void *(*)(void *))getRealOffset(0x5482A7C);        // Player.GetHipTF
+    this->GetLeftAnkleTF = (void *(*)(void *))getRealOffset(0x5482ECC);  // Player.GetLeftAnkleTF
+    this->GetRightAnkleTF = (void *(*)(void *))getRealOffset(0x5482FD8); // Player.GetRightAnkleTF
+    this->GetLeftToeTF = (void *(*)(void *))getRealOffset(0x54830E4);    // Player.GetLeftToeTF
+    this->GetRightToeTF = (void *(*)(void *))getRealOffset(0x54831F0);   // Player.GetRightToeTF
+
+    // Match / Player List (from dump (1).cs: EMKJHAJNPDH.KKDAICOONPI)
+    this->GetPlayerList = (monoList<void **>*(*)())getRealOffset(0x5669EE8); // GetPlayerList
+    this->GetLocalPlayer = (void *(*)())getRealOffset(0x563B718);            // GetLocalPlayer
+
+    this->isReady = true;
 }
