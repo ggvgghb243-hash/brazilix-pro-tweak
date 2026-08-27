@@ -285,9 +285,10 @@ void game_sdk_t::init()
     this->GetLeftToeTF = (void *(*)(void *))getRealOffset(0x54830E4);    // Player.GetLeftToeTF
     this->GetRightToeTF = (void *(*)(void *))getRealOffset(0x54831F0);   // Player.GetRightToeTF
 
-    // Match / Player List (from dump (1).cs: EMKJHAJNPDH.KKDAICOONPI)
-    this->GetPlayerList = (monoList<void **>*(*)())getRealOffset(0x5669EE8); // GetPlayerList
-    this->GetLocalPlayer = (void *(*)())getRealOffset(0x563B718);            // GetLocalPlayer
+    // Match / Player List (from dump (1).cs)
+    this->GetCurrentMatch = (void *(*)())getRealOffset(0x55F1F84);                   // GameFacade.CurrentMatch() [STATIC]
+    this->GetPlayerList = (monoList<void **>*(*)(void *))getRealOffset(0x5669EE8);    // EMKJHAJNPDH.GEPFGOHGOJI() [INSTANCE]
+    this->GetLocalPlayer = (void *(*)(void *))getRealOffset(0x563B718);              // EMKJHAJNPDH.MBEDKMKBFIE() [INSTANCE]
 
     this->isReady = true;
 }

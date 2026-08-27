@@ -20,8 +20,8 @@ struct monoArray
 
 template <typename T>
 struct monoList {
-    
-    
+    void *klass;
+    void *monitor;
     monoArray<T> *items;
     int size;
     int version;
@@ -41,8 +41,8 @@ struct monoList {
 
 template <typename K, typename V>
 struct Dictionary {
-    
-    
+    void *klass;
+    void *monitor;
     monoArray<int **> *table;
     monoArray<void **> *linkSlots;
     monoArray<K> *keys;

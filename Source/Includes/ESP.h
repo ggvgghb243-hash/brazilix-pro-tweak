@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
 #import <QuartzCore/QuartzCore.h>
@@ -57,8 +57,9 @@ public:
     void *(*GetRightToeTF)(void *);
     
     // Match / Players List
-    monoList<void **> *(*GetPlayerList)();
-    void *(*GetLocalPlayer)();
+    void *(*GetCurrentMatch)();                          // static — GameFacade.CurrentMatch()
+    monoList<void **> *(*GetPlayerList)(void *match);    // instance — needs this
+    void *(*GetLocalPlayer)(void *match);                // instance — needs this
 };
 
 extern game_sdk_t *game_sdk;
@@ -260,14 +261,22 @@ inline void get_players()
             if (setFogAddr) ((void (*)(bool))setFogAddr)(false);
         }
 
-        if (!game_sdk->GetPlayerList) return;
-        monoList<void **> *players = game_sdk->GetPlayerList();
+        if (!game_sdk->GetCurrentMatch || !game_sdk->GetPlayerList) return;
+        
+        // Get the match manager singleton (static call, no this needed)
+        void *matchInstance = game_sdk->GetCurrentMatch();
+        if (!matchInstance) {
+            [[ESPRenderer sharedInstance] clearDrawings];
+            return;
+        }
+        
+        monoList<void **> *players = game_sdk->GetPlayerList(matchInstance);
         if (!players || !players->getItems() || players->getSize() <= 0) {
             [[ESPRenderer sharedInstance] clearDrawings];
             return;
         }
 
-        void *local_player = game_sdk->GetLocalPlayer ? game_sdk->GetLocalPlayer() : nullptr;
+        void *local_player = game_sdk->GetLocalPlayer ? game_sdk->GetLocalPlayer(matchInstance) : nullptr;
 
         UIWindow *keyWindow = [UIApplication sharedApplication].keyWindow;
         if (!keyWindow) return;
