@@ -1,4 +1,4 @@
-﻿#import <UIKit/UIKit.h>
+#import <UIKit/UIKit.h>
 #import <QuartzCore/QuartzCore.h>
 #import <CoreGraphics/CoreGraphics.h>
 #import <Foundation/Foundation.h>
@@ -44,7 +44,10 @@ static BOOL MenDeal = NO;
 UIWindow *mainWindow;
 game_sdk_t *game_sdk = new game_sdk_t();
 
+extern "C" void initAntiCheatBypass();
+
 + (void)load {
+    initAntiCheatBypass();
     // Wait until game UI and UnityFramework are loaded
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [self waitForUnityFramework];
