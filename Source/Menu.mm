@@ -16,18 +16,172 @@
 #define kWidth  [UIScreen mainScreen].bounds.size.width
 #define kHeight [UIScreen mainScreen].bounds.size.height
 
-// Colors exactly matching the screenshots
-#define UI_COLOR_MAIN_BG     [UIColor colorWithRed:11.0/255.0 green:14.0/255.0 blue:23.0/255.0 alpha:0.98]
+// Colors exactly matching screenshots
+#define UI_COLOR_MAIN_BG     [UIColor colorWithRed:10.0/255.0 green:13.0/255.0 blue:21.0/255.0 alpha:0.98]
 #define UI_COLOR_SIDEBAR_BG  [UIColor colorWithRed:7.0/255.0 green:9.0/255.0 blue:15.0/255.0 alpha:1.0]
-#define UI_COLOR_TAB_ACTIVE  [UIColor colorWithRed:16.0/255.0 green:22.0/255.0 blue:36.0/255.0 alpha:1.0]
+#define UI_COLOR_TAB_ACTIVE  [UIColor colorWithRed:15.0/255.0 green:20.0/255.0 blue:34.0/255.0 alpha:1.0]
 #define UI_COLOR_ACCENT      [UIColor colorWithRed:24.0/255.0 green:82.0/255.0 blue:255.0/255.0 alpha:1.0] // Vibrant Royal Blue
 #define UI_COLOR_ACCENT_TEXT [UIColor colorWithRed:32.0/255.0 green:96.0/255.0 blue:255.0/255.0 alpha:1.0]
 #define UI_COLOR_TEXT_MAIN   [UIColor colorWithRed:235.0/255.0 green:240.0/255.0 blue:250.0/255.0 alpha:1.0]
-#define UI_COLOR_TEXT_MUTED  [UIColor colorWithRed:130.0/255.0 green:142.0/255.0 blue:165.0/255.0 alpha:1.0]
-#define UI_COLOR_BOX_BG      [UIColor colorWithRed:17.0/255.0 green:22.0/255.0 blue:36.0/255.0 alpha:1.0]
-#define UI_COLOR_BOX_BORDER  [UIColor colorWithRed:30.0/255.0 green:40.0/255.0 blue:62.0/255.0 alpha:1.0]
-#define UI_COLOR_HEADER_BG   [UIColor colorWithRed:14.0/255.0 green:18.0/255.0 blue:30.0/255.0 alpha:1.0]
-#define UI_COLOR_HEADER_BORDER [UIColor colorWithRed:24.0/255.0 green:32.0/255.0 blue:52.0/255.0 alpha:1.0]
+#define UI_COLOR_TEXT_MUTED  [UIColor colorWithRed:125.0/255.0 green:138.0/255.0 blue:160.0/255.0 alpha:1.0]
+#define UI_COLOR_BOX_BG      [UIColor colorWithRed:16.0/255.0 green:21.0/255.0 blue:34.0/255.0 alpha:1.0]
+#define UI_COLOR_BOX_BORDER  [UIColor colorWithRed:28.0/255.0 green:38.0/255.0 blue:58.0/255.0 alpha:1.0]
+#define UI_COLOR_HEADER_BG   [UIColor colorWithRed:13.0/255.0 green:17.0/255.0 blue:28.0/255.0 alpha:1.0]
+#define UI_COLOR_HEADER_BORDER [UIColor colorWithRed:22.0/255.0 green:30.0/255.0 blue:48.0/255.0 alpha:1.0]
+
+// ===== VECTOR ICON GENERATOR (NO EMOJIS) =====
+@interface IconHelper : NSObject
++ (UIImage *)drawAimbotIconWithColor:(UIColor *)color size:(CGSize)size;
++ (UIImage *)drawVisualsIconWithColor:(UIColor *)color size:(CGSize)size;
++ (UIImage *)drawMiscIconWithColor:(UIColor *)color size:(CGSize)size;
++ (UIImage *)drawSettingsIconWithColor:(UIColor *)color size:(CGSize)size;
+@end
+
+@implementation IconHelper
+
++ (UIImage *)drawAimbotIconWithColor:(UIColor *)color size:(CGSize)size {
+    UIGraphicsBeginImageContextWithOptions(size, NO, [UIScreen mainScreen].scale);
+    CGContextRef ctx = UIGraphicsGetCurrentContext();
+    CGContextSetStrokeColorWithColor(ctx, color.CGColor);
+    CGContextSetFillColorWithColor(ctx, color.CGColor);
+    CGContextSetLineWidth(ctx, 1.4f);
+    
+    CGFloat cx = size.width / 2.0f;
+    CGFloat cy = size.height / 2.0f;
+    CGFloat r = (MIN(size.width, size.height) / 2.0f) - 3.0f;
+    
+    // Outer circle
+    CGContextStrokeEllipseInRect(ctx, CGRectMake(cx - r, cy - r, r * 2, r * 2));
+    
+    // 4 crosshair ticks
+    CGFloat tick = 2.5f;
+    CGContextMoveToPoint(ctx, cx, cy - r - tick);
+    CGContextAddLineToPoint(ctx, cx, cy - r + 1.5f);
+    
+    CGContextMoveToPoint(ctx, cx, cy + r - 1.5f);
+    CGContextAddLineToPoint(ctx, cx, cy + r + tick);
+    
+    CGContextMoveToPoint(ctx, cx - r - tick, cy);
+    CGContextAddLineToPoint(ctx, cx - r + 1.5f, cy);
+    
+    CGContextMoveToPoint(ctx, cx + r - 1.5f, cy);
+    CGContextAddLineToPoint(ctx, cx + r + tick, cy);
+    CGContextStrokePath(ctx);
+    
+    // Center dot
+    CGContextFillEllipseInRect(ctx, CGRectMake(cx - 1.5f, cy - 1.5f, 3.0f, 3.0f));
+    
+    UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return img;
+}
+
++ (UIImage *)drawVisualsIconWithColor:(UIColor *)color size:(CGSize)size {
+    UIGraphicsBeginImageContextWithOptions(size, NO, [UIScreen mainScreen].scale);
+    CGContextRef ctx = UIGraphicsGetCurrentContext();
+    CGContextSetStrokeColorWithColor(ctx, color.CGColor);
+    CGContextSetFillColorWithColor(ctx, color.CGColor);
+    
+    CGFloat cx = size.width / 2.0f;
+    CGFloat cy = size.height / 2.0f;
+    CGFloat w = size.width - 4.0f;
+    CGFloat h = size.height - 7.0f;
+    
+    // Eye outline curve
+    UIBezierPath *path = [UIBezierPath bezierPath];
+    [path moveToPoint:CGPointMake(cx - w/2.0f, cy)];
+    [path addQuadCurveToPoint:CGPointMake(cx + w/2.0f, cy) controlPoint:CGPointMake(cx, cy - h/1.2f)];
+    [path addQuadCurveToPoint:CGPointMake(cx - w/2.0f, cy) controlPoint:CGPointMake(cx, cy + h/1.2f)];
+    [path closePath];
+    path.lineWidth = 1.4f;
+    [color setStroke];
+    [path stroke];
+    
+    // Center pupil
+    CGContextFillEllipseInRect(ctx, CGRectMake(cx - 2.2f, cy - 2.2f, 4.4f, 4.4f));
+    
+    UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return img;
+}
+
++ (UIImage *)drawMiscIconWithColor:(UIColor *)color size:(CGSize)size {
+    UIGraphicsBeginImageContextWithOptions(size, NO, [UIScreen mainScreen].scale);
+    CGContextRef ctx = UIGraphicsGetCurrentContext();
+    CGContextSetStrokeColorWithColor(ctx, color.CGColor);
+    CGContextSetLineWidth(ctx, 1.4f);
+    
+    CGFloat cx = size.width / 2.0f;
+    CGFloat cy = size.height / 2.0f;
+    CGFloat w = size.width - 5.0f;
+    CGFloat h = size.height - 5.0f;
+    
+    // Rounded box outline
+    UIBezierPath *box = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(cx - w/2.0f, cy - h/2.0f, w, h) cornerRadius:2.5f];
+    box.lineWidth = 1.4f;
+    [color setStroke];
+    [box stroke];
+    
+    // Horizontal divider
+    CGFloat divY = cy - h/2.0f + h * 0.38f;
+    CGContextMoveToPoint(ctx, cx - w/2.0f, divY);
+    CGContextAddLineToPoint(ctx, cx + w/2.0f, divY);
+    
+    // Center handle slot
+    CGContextMoveToPoint(ctx, cx - 2.5f, divY);
+    CGContextAddLineToPoint(ctx, cx - 2.5f, divY + 3.0f);
+    CGContextAddLineToPoint(ctx, cx + 2.5f, divY + 3.0f);
+    CGContextAddLineToPoint(ctx, cx + 2.5f, divY);
+    CGContextStrokePath(ctx);
+    
+    UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return img;
+}
+
++ (UIImage *)drawSettingsIconWithColor:(UIColor *)color size:(CGSize)size {
+    UIGraphicsBeginImageContextWithOptions(size, NO, [UIScreen mainScreen].scale);
+    CGContextRef ctx = UIGraphicsGetCurrentContext();
+    CGContextSetStrokeColorWithColor(ctx, color.CGColor);
+    
+    CGFloat cx = size.width / 2.0f;
+    CGFloat cy = size.height / 2.0f;
+    CGFloat rOuter = (MIN(size.width, size.height) / 2.0f) - 2.0f;
+    CGFloat rInner = rOuter - 2.2f;
+    CGFloat rHole = 2.4f;
+    
+    int spokes = 6;
+    UIBezierPath *gearPath = [UIBezierPath bezierPath];
+    for (int i = 0; i < spokes; i++) {
+        CGFloat angle1 = (i * 2 * M_PI / spokes) - 0.22f;
+        CGFloat angle2 = (i * 2 * M_PI / spokes) + 0.22f;
+        CGFloat angle3 = ((i + 1) * 2 * M_PI / spokes) - 0.22f;
+        
+        CGPoint p1 = CGPointMake(cx + rOuter * cos(angle1), cy + rOuter * sin(angle1));
+        CGPoint p2 = CGPointMake(cx + rOuter * cos(angle2), cy + rOuter * sin(angle2));
+        CGPoint p3 = CGPointMake(cx + rInner * cos(angle2 + 0.15f), cy + rInner * sin(angle2 + 0.15f));
+        CGPoint p4 = CGPointMake(cx + rInner * cos(angle3 - 0.15f), cy + rInner * sin(angle3 - 0.15f));
+        
+        if (i == 0) [gearPath moveToPoint:p1];
+        else [gearPath addLineToPoint:p1];
+        [gearPath addLineToPoint:p2];
+        [gearPath addLineToPoint:p3];
+        [gearPath addLineToPoint:p4];
+    }
+    [gearPath closePath];
+    gearPath.lineWidth = 1.3f;
+    [color setStroke];
+    [gearPath stroke];
+    
+    CGContextSetLineWidth(ctx, 1.2f);
+    CGContextStrokeEllipseInRect(ctx, CGRectMake(cx - rHole, cy - rHole, rHole * 2, rHole * 2));
+    
+    UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return img;
+}
+
+@end
 
 // ===== CUSTOM CHECKBOX CONTROL =====
 @interface CustomCheckbox : UIControl
@@ -45,23 +199,23 @@
     if (self) {
         _isChecked = checked;
         
-        _boxView = [[UIView alloc] initWithFrame:CGRectMake(0, 3, 20, 20)];
-        _boxView.layer.cornerRadius = 5.0f;
-        _boxView.layer.borderWidth = 1.2f;
+        _boxView = [[UIView alloc] initWithFrame:CGRectMake(0, 3, 17, 17)];
+        _boxView.layer.cornerRadius = 4.0f;
+        _boxView.layer.borderWidth = 1.0f;
         _boxView.userInteractionEnabled = NO;
         [self addSubview:_boxView];
         
         _checkLabel = [[UILabel alloc] initWithFrame:_boxView.bounds];
         _checkLabel.text = @"✓";
-        _checkLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightBold];
+        _checkLabel.font = [UIFont systemFontOfSize:11 weight:UIFontWeightBold];
         _checkLabel.textColor = [UIColor whiteColor];
         _checkLabel.textAlignment = NSTextAlignmentCenter;
         _checkLabel.userInteractionEnabled = NO;
         [_boxView addSubview:_checkLabel];
         
-        _titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(30, 0, 240, 26)];
+        _titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(26, 0, 220, 22)];
         _titleLabel.text = title;
-        _titleLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
+        _titleLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
         _titleLabel.textColor = UI_COLOR_TEXT_MAIN;
         _titleLabel.userInteractionEnabled = NO;
         [self addSubview:_titleLabel];
@@ -97,12 +251,13 @@
 @property (nonatomic, strong) UIView *sidebarView;
 @property (nonatomic, strong) UIView *contentContainer;
 @property (nonatomic, strong) UIView *headerPillView;
-@property (nonatomic, strong) UILabel *headerIconLabel;
+@property (nonatomic, strong) UIImageView *headerIconView;
 @property (nonatomic, strong) UILabel *headerTitleLabel;
 @property (nonatomic, strong) UILabel *headerDividerLabel;
 @property (nonatomic, strong) UILabel *headerSubLabel;
 
 @property (nonatomic, strong) NSMutableArray<UIButton *> *tabButtons;
+@property (nonatomic, strong) NSMutableArray<UIImageView *> *tabIconViews;
 @property (nonatomic, strong) NSMutableArray<UIView *> *tabActiveBgs;
 @property (nonatomic, strong) NSMutableArray<UIView *> *tabIndicators;
 @property (nonatomic, strong) NSArray<UIScrollView *> *tabViews;
@@ -175,17 +330,17 @@ extern "C" void initAntiCheatBypass();
         }
     }
     
-    // Enlarged menu dimensions for clearer, comfortable UI
-    CGFloat menuWidth = 470.0f;
-    CGFloat menuHeight = 350.0f;
+    // Exactly scaled menu dimensions matching screenshots
+    CGFloat menuWidth = 380.0f;
+    CGFloat menuHeight = 275.0f;
     CGFloat x = (kWidth - menuWidth) * 0.5f;
     CGFloat y = (kHeight - menuHeight) * 0.5f;
     
     _menuView = [[UIView alloc] initWithFrame:CGRectMake(x, y, menuWidth, menuHeight)];
     _menuView.backgroundColor = UI_COLOR_MAIN_BG;
-    _menuView.layer.cornerRadius = 12.0f;
+    _menuView.layer.cornerRadius = 10.0f;
     _menuView.layer.borderWidth = 1.0f;
-    _menuView.layer.borderColor = [UIColor colorWithRed:28.0/255.0 green:36.0/255.0 blue:56.0/255.0 alpha:0.9].CGColor;
+    _menuView.layer.borderColor = [UIColor colorWithRed:25.0/255.0 green:33.0/255.0 blue:52.0/255.0 alpha:0.9].CGColor;
     _menuView.clipsToBounds = YES;
     _menuView.hidden = YES;
     _menuView.userInteractionEnabled = YES;
@@ -195,50 +350,45 @@ extern "C" void initAntiCheatBypass();
     
     if (mainWindow) [mainWindow addSubview:_menuView];
     
-    // --- 1. Left Sidebar ---
-    CGFloat sidebarWidth = 88.0f;
+    // --- 1. Left Sidebar with Empty Space below Settings ---
+    CGFloat sidebarWidth = 74.0f;
     _sidebarView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, sidebarWidth, menuHeight)];
     _sidebarView.backgroundColor = UI_COLOR_SIDEBAR_BG;
     [_menuView addSubview:_sidebarView];
     
     _tabButtons = [NSMutableArray new];
+    _tabIconViews = [NSMutableArray new];
     _tabActiveBgs = [NSMutableArray new];
     _tabIndicators = [NSMutableArray new];
     
-    NSArray *tabs = @[
-        @{@"icon": @"🎯", @"name": @"Aimbot"},
-        @{@"icon": @"👁", @"name": @"Visuals"},
-        @{@"icon": @"📦", @"name": @"Misc"},
-        @{@"icon": @"⚙", @"name": @"Settings"}
-    ];
+    NSArray *tabNames = @[@"Aimbot", @"Visuals", @"Misc", @"Settings"];
     
-    CGFloat tabH = menuHeight / 4.0f;
-    for (int i = 0; i < tabs.count; i++) {
+    CGFloat tabH = 50.0f; // Fixed height so the bottom is empty space!
+    for (int i = 0; i < tabNames.count; i++) {
         UIButton *tabBtn = [UIButton buttonWithType:UIButtonTypeCustom];
         tabBtn.frame = CGRectMake(0, i * tabH, sidebarWidth, tabH);
         tabBtn.tag = i;
         [tabBtn addTarget:self action:@selector(tabClicked:) forControlEvents:UIControlEventTouchUpInside];
         
         // Active rounded item background
-        UIView *activeBg = [[UIView alloc] initWithFrame:CGRectMake(6, 6, sidebarWidth - 12, tabH - 12)];
+        UIView *activeBg = [[UIView alloc] initWithFrame:CGRectMake(4, 4, sidebarWidth - 8, tabH - 8)];
         activeBg.backgroundColor = UI_COLOR_TAB_ACTIVE;
-        activeBg.layer.cornerRadius = 8.0f;
+        activeBg.layer.cornerRadius = 6.0f;
         activeBg.hidden = (i != 0);
         activeBg.userInteractionEnabled = NO;
         [tabBtn addSubview:activeBg];
         [_tabActiveBgs addObject:activeBg];
         
-        UILabel *iconLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 18, sidebarWidth, 24)];
-        iconLabel.text = tabs[i][@"icon"];
-        iconLabel.font = [UIFont systemFontOfSize:18];
-        iconLabel.textAlignment = NSTextAlignmentCenter;
-        iconLabel.tag = 101;
-        iconLabel.userInteractionEnabled = NO;
-        [tabBtn addSubview:iconLabel];
+        // Line-art Icon (No colorful emoji)
+        UIImageView *iconView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 9, sidebarWidth, 18)];
+        iconView.contentMode = UIViewContentModeCenter;
+        iconView.userInteractionEnabled = NO;
+        [tabBtn addSubview:iconView];
+        [_tabIconViews addObject:iconView];
         
-        UILabel *nameLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 46, sidebarWidth, 20)];
-        nameLabel.text = tabs[i][@"name"];
-        nameLabel.font = [UIFont systemFontOfSize:11.5f weight:UIFontWeightMedium];
+        UILabel *nameLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 29, sidebarWidth, 16)];
+        nameLabel.text = tabNames[i];
+        nameLabel.font = [UIFont systemFontOfSize:10.5 weight:UIFontWeightMedium];
         nameLabel.textColor = (i == 0) ? [UIColor whiteColor] : UI_COLOR_TEXT_MUTED;
         nameLabel.textAlignment = NSTextAlignmentCenter;
         nameLabel.tag = 102;
@@ -246,9 +396,9 @@ extern "C" void initAntiCheatBypass();
         [tabBtn addSubview:nameLabel];
         
         // Right vertical blue indicator bar
-        UIView *ind = [[UIView alloc] initWithFrame:CGRectMake(sidebarWidth - 4, 18, 4, tabH - 36)];
+        UIView *ind = [[UIView alloc] initWithFrame:CGRectMake(sidebarWidth - 3, 10, 3, tabH - 20)];
         ind.backgroundColor = UI_COLOR_ACCENT;
-        ind.layer.cornerRadius = 2.0f;
+        ind.layer.cornerRadius = 1.5f;
         ind.hidden = (i != 0); // Default to Aimbot
         ind.userInteractionEnabled = NO;
         [tabBtn addSubview:ind];
@@ -258,44 +408,44 @@ extern "C" void initAntiCheatBypass();
         [_tabIndicators addObject:ind];
     }
     
-    // --- 2. Right Content Header Pill ---
+    // --- 2. Right Content Header Pill Bar ---
     CGFloat contentX = sidebarWidth;
     CGFloat contentW = menuWidth - sidebarWidth;
-    CGFloat headerMargin = 14.0f;
+    CGFloat headerMargin = 10.0f;
     CGFloat headerW = contentW - (headerMargin * 2);
-    CGFloat headerH = 38.0f;
+    CGFloat headerH = 30.0f;
     
-    _headerPillView = [[UIView alloc] initWithFrame:CGRectMake(contentX + headerMargin, 12, headerW, headerH)];
+    _headerPillView = [[UIView alloc] initWithFrame:CGRectMake(contentX + headerMargin, 8, headerW, headerH)];
     _headerPillView.backgroundColor = UI_COLOR_HEADER_BG;
-    _headerPillView.layer.cornerRadius = 6.0f;
-    _headerPillView.layer.borderWidth = 1.0f;
+    _headerPillView.layer.cornerRadius = 5.0f;
+    _headerPillView.layer.borderWidth = 0.8f;
     _headerPillView.layer.borderColor = UI_COLOR_HEADER_BORDER.CGColor;
     [_menuView addSubview:_headerPillView];
     
-    _headerIconLabel = [[UILabel alloc] initWithFrame:CGRectMake(12, 9, 20, 20)];
-    _headerIconLabel.font = [UIFont systemFontOfSize:14];
-    [_headerPillView addSubview:_headerIconLabel];
+    _headerIconView = [[UIImageView alloc] initWithFrame:CGRectMake(10, 7, 16, 16)];
+    _headerIconView.contentMode = UIViewContentModeCenter;
+    [_headerPillView addSubview:_headerIconView];
     
-    _headerTitleLabel = [[UILabel alloc] initWithFrame:CGRectMake(36, 9, 82, 20)];
-    _headerTitleLabel.font = [UIFont systemFontOfSize:12.5f weight:UIFontWeightBold];
+    _headerTitleLabel = [[UILabel alloc] initWithFrame:CGRectMake(30, 6, 60, 18)];
+    _headerTitleLabel.font = [UIFont systemFontOfSize:11 weight:UIFontWeightBold];
     _headerTitleLabel.textColor = UI_COLOR_ACCENT;
     [_headerPillView addSubview:_headerTitleLabel];
     
-    _headerDividerLabel = [[UILabel alloc] initWithFrame:CGRectMake(118, 9, 10, 20)];
+    _headerDividerLabel = [[UILabel alloc] initWithFrame:CGRectMake(92, 6, 8, 18)];
     _headerDividerLabel.text = @"|";
-    _headerDividerLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightLight];
-    _headerDividerLabel.textColor = [UIColor colorWithRed:45.0/255.0 green:55.0/255.0 blue:80.0/255.0 alpha:1.0];
+    _headerDividerLabel.font = [UIFont systemFontOfSize:11 weight:UIFontWeightLight];
+    _headerDividerLabel.textColor = [UIColor colorWithRed:40.0/255.0 green:50.0/255.0 blue:72.0/255.0 alpha:1.0];
     [_headerPillView addSubview:_headerDividerLabel];
     
-    _headerSubLabel = [[UILabel alloc] initWithFrame:CGRectMake(132, 9, headerW - 140, 20)];
-    _headerSubLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightMedium];
+    _headerSubLabel = [[UILabel alloc] initWithFrame:CGRectMake(104, 6, headerW - 110, 18)];
+    _headerSubLabel.font = [UIFont systemFontOfSize:10.5 weight:UIFontWeightRegular];
     _headerSubLabel.textColor = UI_COLOR_TEXT_MAIN;
     _headerSubLabel.adjustsFontSizeToFitWidth = YES;
-    _headerSubLabel.minimumScaleFactor = 0.8f;
+    _headerSubLabel.minimumScaleFactor = 0.75f;
     [_headerPillView addSubview:_headerSubLabel];
     
     // --- 3. Content Tabs Container ---
-    CGFloat contentTop = 56.0f;
+    CGFloat contentTop = 44.0f;
     CGFloat contentH = menuHeight - contentTop;
     _contentContainer = [[UIView alloc] initWithFrame:CGRectMake(contentX, contentTop, contentW, contentH)];
     [_menuView addSubview:_contentContainer];
@@ -311,7 +461,7 @@ extern "C" void initAntiCheatBypass();
         [_contentContainer addSubview:v];
     }
     
-    // Select Aimbot by default matching first screenshot
+    // Select Aimbot by default
     [self selectTab:0];
 }
 
@@ -321,48 +471,48 @@ extern "C" void initAntiCheatBypass();
     sv.showsVerticalScrollIndicator = YES;
     sv.indicatorStyle = UIScrollViewIndicatorStyleWhite;
     
-    CGFloat py = 6;
-    CGFloat px = 14;
-    CGFloat pw = w - 28;
+    CGFloat py = 4;
+    CGFloat px = 10;
+    CGFloat pw = w - 20;
     
     // Master switch
     CustomCheckbox *masterCheck = [[CustomCheckbox alloc] initWithTitle:@"Master switch" checked:YES];
-    masterCheck.frame = CGRectMake(px, py, pw, 26);
+    masterCheck.frame = CGRectMake(px, py, pw, 22);
     [sv addSubview:masterCheck];
-    py += 32;
+    py += 26;
     
     // Aiming method
-    [sv addSubview:[self makeLabel:@"Aiming method" frame:CGRectMake(px, py, pw, 18)]];
-    py += 22;
-    [sv addSubview:[self makeDropdown:@"Silent aimbot" frame:CGRectMake(px, py, pw, 32)]];
-    py += 38;
+    [sv addSubview:[self makeLabel:@"Aiming method" frame:CGRectMake(px, py, pw, 16)]];
+    py += 17;
+    [sv addSubview:[self makeDropdown:@"Silent aimbot" frame:CGRectMake(px, py, pw, 26)]];
+    py += 31;
     
     // Show FOV circle with right color swatch
     CustomCheckbox *fovCheck = [[CustomCheckbox alloc] initWithTitle:@"Show FOV circle" checked:YES];
-    fovCheck.frame = CGRectMake(px, py, pw - 36, 26);
+    fovCheck.frame = CGRectMake(px, py, pw - 30, 22);
     [sv addSubview:fovCheck];
-    [sv addSubview:[self makeColorSwatch:[UIColor whiteColor] frame:CGRectMake(px + pw - 24, py + 4, 24, 18)]];
-    py += 32;
+    [sv addSubview:[self makeColorSwatch:[UIColor whiteColor] frame:CGRectMake(px + pw - 20, py + 3, 20, 15)]];
+    py += 26;
     
     // Ignore types
-    [sv addSubview:[self makeLabel:@"Ignore types" frame:CGRectMake(px, py, pw, 18)]];
-    py += 22;
-    [sv addSubview:[self makeDropdown:@"Invisible, Knocked" frame:CGRectMake(px, py, pw, 32)]];
-    py += 38;
+    [sv addSubview:[self makeLabel:@"Ignore types" frame:CGRectMake(px, py, pw, 16)]];
+    py += 17;
+    [sv addSubview:[self makeDropdown:@"Invisible, Knocked" frame:CGRectMake(px, py, pw, 26)]];
+    py += 31;
     
     // Hitbox
-    [sv addSubview:[self makeLabel:@"Hitbox" frame:CGRectMake(px, py, pw, 18)]];
-    py += 22;
-    [sv addSubview:[self makeDropdown:@"Head" frame:CGRectMake(px, py, pw, 32)]];
-    py += 38;
+    [sv addSubview:[self makeLabel:@"Hitbox" frame:CGRectMake(px, py, pw, 16)]];
+    py += 17;
+    [sv addSubview:[self makeDropdown:@"Head" frame:CGRectMake(px, py, pw, 26)]];
+    py += 31;
     
     // Target priority
-    [sv addSubview:[self makeLabel:@"Target priority" frame:CGRectMake(px, py, pw, 18)]];
-    py += 22;
-    [sv addSubview:[self makeDropdown:@"Closest to crosshair" frame:CGRectMake(px, py, pw, 32)]];
-    py += 42;
+    [sv addSubview:[self makeLabel:@"Target priority" frame:CGRectMake(px, py, pw, 16)]];
+    py += 17;
+    [sv addSubview:[self makeDropdown:@"Closest to crosshair" frame:CGRectMake(px, py, pw, 26)]];
+    py += 34;
     
-    sv.contentSize = CGSizeMake(w, py + 15);
+    sv.contentSize = CGSizeMake(w, py + 10);
     return sv;
 }
 
@@ -372,97 +522,97 @@ extern "C" void initAntiCheatBypass();
     sv.showsVerticalScrollIndicator = YES;
     sv.indicatorStyle = UIScrollViewIndicatorStyleWhite;
     
-    CGFloat py = 6;
-    CGFloat px = 14;
-    CGFloat pw = w - 28;
+    CGFloat py = 4;
+    CGFloat px = 10;
+    CGFloat pw = w - 20;
     
     // Enemy ESP (Master Switch)
     _espMainCheck = [[CustomCheckbox alloc] initWithTitle:@"Enemy ESP" checked:Vars.Enable];
-    _espMainCheck.frame = CGRectMake(px, py, pw, 26);
+    _espMainCheck.frame = CGRectMake(px, py, pw, 22);
     _espMainCheck.onToggle = ^(BOOL checked) {
         Vars.Enable = checked;
     };
     [sv addSubview:_espMainCheck];
-    py += 32;
+    py += 26;
     
     // Line (Snaplines) + White Swatch
     _lineCheck = [[CustomCheckbox alloc] initWithTitle:@"Line" checked:Vars.lines];
-    _lineCheck.frame = CGRectMake(px, py, pw - 36, 26);
+    _lineCheck.frame = CGRectMake(px, py, pw - 30, 22);
     _lineCheck.onToggle = ^(BOOL checked) {
         Vars.lines = checked;
     };
     [sv addSubview:_lineCheck];
-    [sv addSubview:[self makeColorSwatch:[UIColor whiteColor] frame:CGRectMake(px + pw - 24, py + 4, 24, 18)]];
-    py += 32;
+    [sv addSubview:[self makeColorSwatch:[UIColor whiteColor] frame:CGRectMake(px + pw - 20, py + 3, 20, 15)]];
+    py += 26;
     
     // Line fire material (Unchecked)
     CustomCheckbox *fireMatCheck = [[CustomCheckbox alloc] initWithTitle:@"Line fire material" checked:NO];
-    fireMatCheck.frame = CGRectMake(px, py, pw, 26);
+    fireMatCheck.frame = CGRectMake(px, py, pw, 22);
     [sv addSubview:fireMatCheck];
-    py += 32;
+    py += 26;
     
     // Box ESP + Red & Green Swatches
     _boxCheck = [[CustomCheckbox alloc] initWithTitle:@"Box" checked:Vars.Box];
-    _boxCheck.frame = CGRectMake(px, py, pw - 60, 26);
+    _boxCheck.frame = CGRectMake(px, py, pw - 50, 22);
     _boxCheck.onToggle = ^(BOOL checked) {
         Vars.Box = checked;
     };
     [sv addSubview:_boxCheck];
-    [sv addSubview:[self makeColorSwatch:[UIColor colorWithRed:255.0/255.0 green:40.0/255.0 blue:40.0/255.0 alpha:1.0] frame:CGRectMake(px + pw - 52, py + 4, 22, 18)]];
-    [sv addSubview:[self makeColorSwatch:[UIColor colorWithRed:30.0/255.0 green:225.0/255.0 blue:60.0/255.0 alpha:1.0] frame:CGRectMake(px + pw - 24, py + 4, 22, 18)]];
-    py += 32;
+    [sv addSubview:[self makeColorSwatch:[UIColor colorWithRed:255.0/255.0 green:35.0/255.0 blue:35.0/255.0 alpha:1.0] frame:CGRectMake(px + pw - 44, py + 3, 19, 15)]];
+    [sv addSubview:[self makeColorSwatch:[UIColor colorWithRed:25.0/255.0 green:225.0/255.0 blue:55.0/255.0 alpha:1.0] frame:CGRectMake(px + pw - 20, py + 3, 19, 15)]];
+    py += 26;
     
     // Health
     _healthCheck = [[CustomCheckbox alloc] initWithTitle:@"Health" checked:Vars.Health];
-    _healthCheck.frame = CGRectMake(px, py, pw, 26);
+    _healthCheck.frame = CGRectMake(px, py, pw, 22);
     _healthCheck.onToggle = ^(BOOL checked) {
         Vars.Health = checked;
     };
     [sv addSubview:_healthCheck];
-    py += 30;
+    py += 24;
     
     // Nickname
     _nameCheck = [[CustomCheckbox alloc] initWithTitle:@"Nickname" checked:Vars.Name];
-    _nameCheck.frame = CGRectMake(px, py, pw, 26);
+    _nameCheck.frame = CGRectMake(px, py, pw, 22);
     _nameCheck.onToggle = ^(BOOL checked) {
         Vars.Name = checked;
     };
     [sv addSubview:_nameCheck];
-    py += 30;
+    py += 24;
     
     // Distance
     _distCheck = [[CustomCheckbox alloc] initWithTitle:@"Distance" checked:Vars.Distance];
-    _distCheck.frame = CGRectMake(px, py, pw, 26);
+    _distCheck.frame = CGRectMake(px, py, pw, 22);
     _distCheck.onToggle = ^(BOOL checked) {
         Vars.Distance = checked;
     };
     [sv addSubview:_distCheck];
-    py += 30;
+    py += 24;
     
     // Skeleton + Blue & Green Swatches
     _skelCheck = [[CustomCheckbox alloc] initWithTitle:@"Skeleton" checked:Vars.skeleton];
-    _skelCheck.frame = CGRectMake(px, py, pw - 60, 26);
+    _skelCheck.frame = CGRectMake(px, py, pw - 50, 22);
     _skelCheck.onToggle = ^(BOOL checked) {
         Vars.skeleton = checked;
     };
     [sv addSubview:_skelCheck];
-    [sv addSubview:[self makeColorSwatch:[UIColor colorWithRed:30.0/255.0 green:60.0/255.0 blue:255.0/255.0 alpha:1.0] frame:CGRectMake(px + pw - 52, py + 4, 22, 18)]];
-    [sv addSubview:[self makeColorSwatch:[UIColor colorWithRed:30.0/255.0 green:225.0/255.0 blue:60.0/255.0 alpha:1.0] frame:CGRectMake(px + pw - 24, py + 4, 22, 18)]];
-    py += 34;
+    [sv addSubview:[self makeColorSwatch:[UIColor colorWithRed:24.0/255.0 green:60.0/255.0 blue:255.0/255.0 alpha:1.0] frame:CGRectMake(px + pw - 44, py + 3, 19, 15)]];
+    [sv addSubview:[self makeColorSwatch:[UIColor colorWithRed:25.0/255.0 green:225.0/255.0 blue:55.0/255.0 alpha:1.0] frame:CGRectMake(px + pw - 20, py + 3, 19, 15)]];
+    py += 28;
     
     // Skeleton bone thickness slider (2.0)
     [sv addSubview:[self makeSliderRow:@"Skeleton bone thickness" value:@"2.0" defaultVal:0.4f y:&py width:pw x:px]];
     
     // Nearby enemies count
     _countCheck = [[CustomCheckbox alloc] initWithTitle:@"Nearby enemies count" checked:Vars.counts];
-    _countCheck.frame = CGRectMake(px, py, pw, 26);
+    _countCheck.frame = CGRectMake(px, py, pw, 22);
     _countCheck.onToggle = ^(BOOL checked) {
         Vars.counts = checked;
     };
     [sv addSubview:_countCheck];
-    py += 34;
+    py += 28;
     
-    sv.contentSize = CGSizeMake(w, py + 15);
+    sv.contentSize = CGSizeMake(w, py + 10);
     return sv;
 }
 
@@ -472,58 +622,58 @@ extern "C" void initAntiCheatBypass();
     sv.showsVerticalScrollIndicator = YES;
     sv.indicatorStyle = UIScrollViewIndicatorStyleWhite;
     
-    CGFloat py = 6;
-    CGFloat px = 14;
-    CGFloat pw = w - 28;
+    CGFloat py = 4;
+    CGFloat px = 10;
+    CGFloat pw = w - 20;
     
     // Disclaimer lines
-    UILabel *warn1 = [self makeLabel:@"These features are only for fun and may be unsafe." frame:CGRectMake(px, py, pw, 20)];
-    warn1.font = [UIFont systemFontOfSize:12.5f weight:UIFontWeightMedium];
+    UILabel *warn1 = [self makeLabel:@"These features are only for fun and may be unsafe." frame:CGRectMake(px, py, pw, 18)];
+    warn1.font = [UIFont systemFontOfSize:11.5f weight:UIFontWeightMedium];
     warn1.textColor = UI_COLOR_TEXT_MAIN;
     [sv addSubview:warn1];
-    py += 24;
+    py += 20;
     
-    UILabel *warn2 = [self makeLabel:@"Use them at your own risk!" frame:CGRectMake(px, py, pw, 20)];
-    warn2.font = [UIFont systemFontOfSize:12.5f weight:UIFontWeightMedium];
+    UILabel *warn2 = [self makeLabel:@"Use them at your own risk!" frame:CGRectMake(px, py, pw, 18)];
+    warn2.font = [UIFont systemFontOfSize:11.5f weight:UIFontWeightMedium];
     warn2.textColor = UI_COLOR_TEXT_MAIN;
     [sv addSubview:warn2];
-    py += 32;
+    py += 26;
     
     // Checkboxes
     _fogCheck = [[CustomCheckbox alloc] initWithTitle:@"No fog" checked:Vars.NoFog];
-    _fogCheck.frame = CGRectMake(px, py, pw, 26);
+    _fogCheck.frame = CGRectMake(px, py, pw, 22);
     _fogCheck.onToggle = ^(BOOL checked) {
         Vars.NoFog = checked;
     };
     [sv addSubview:_fogCheck];
-    py += 30;
+    py += 24;
     
     CustomCheckbox *spreadCheck = [[CustomCheckbox alloc] initWithTitle:@"No weapon spread" checked:NO];
-    spreadCheck.frame = CGRectMake(px, py, pw, 26);
+    spreadCheck.frame = CGRectMake(px, py, pw, 22);
     [sv addSubview:spreadCheck];
-    py += 30;
+    py += 24;
     
     CustomCheckbox *lootCheck = [[CustomCheckbox alloc] initWithTitle:@"Instant loot" checked:NO];
-    lootCheck.frame = CGRectMake(px, py, pw, 26);
+    lootCheck.frame = CGRectMake(px, py, pw, 22);
     [sv addSubview:lootCheck];
-    py += 30;
+    py += 24;
     
     CustomCheckbox *iceWallCheck = [[CustomCheckbox alloc] initWithTitle:@"Inverted IceWall rotation" checked:NO];
-    iceWallCheck.frame = CGRectMake(px, py, pw, 26);
+    iceWallCheck.frame = CGRectMake(px, py, pw, 22);
     [sv addSubview:iceWallCheck];
-    py += 30;
+    py += 24;
     
     CustomCheckbox *aspectCheck = [[CustomCheckbox alloc] initWithTitle:@"Aspect ratio" checked:NO];
-    aspectCheck.frame = CGRectMake(px, py, pw, 26);
+    aspectCheck.frame = CGRectMake(px, py, pw, 22);
     [sv addSubview:aspectCheck];
-    py += 30;
+    py += 24;
     
     CustomCheckbox *autoFireCheck = [[CustomCheckbox alloc] initWithTitle:@"Auto-fire" checked:NO];
-    autoFireCheck.frame = CGRectMake(px, py, pw, 26);
+    autoFireCheck.frame = CGRectMake(px, py, pw, 22);
     [sv addSubview:autoFireCheck];
-    py += 34;
+    py += 28;
     
-    sv.contentSize = CGSizeMake(w, py + 15);
+    sv.contentSize = CGSizeMake(w, py + 10);
     return sv;
 }
 
@@ -533,82 +683,82 @@ extern "C" void initAntiCheatBypass();
     sv.showsVerticalScrollIndicator = YES;
     sv.indicatorStyle = UIScrollViewIndicatorStyleWhite;
     
-    CGFloat py = 6;
-    CGFloat px = 14;
-    CGFloat pw = w - 28;
+    CGFloat py = 4;
+    CGFloat px = 10;
+    CGFloat pw = w - 20;
     
     // OB52 text
-    UILabel *verLabel = [self makeLabel:@"OB52 1.11 (14affab80a9c35e0) (null | 7ffffffffffffff)\n(0|0|0|0|0|0)" frame:CGRectMake(px, py, pw, 36)];
+    UILabel *verLabel = [self makeLabel:@"OB52 1.11 (14affab80a9c35e0) (null | 7ffffffffffffff)\n(0|0|0|0|0|0)" frame:CGRectMake(px, py, pw, 32)];
     verLabel.numberOfLines = 2;
-    verLabel.font = [UIFont systemFontOfSize:11 weight:UIFontWeightMedium];
+    verLabel.font = [UIFont systemFontOfSize:10.5 weight:UIFontWeightMedium];
     verLabel.textColor = UI_COLOR_TEXT_MAIN;
     [sv addSubview:verLabel];
-    py += 42;
+    py += 36;
     
     // Accent color row
-    [sv addSubview:[self makeLabel:@"Accent color" frame:CGRectMake(px, py, pw - 40, 22)]];
-    [sv addSubview:[self makeColorSwatch:UI_COLOR_ACCENT frame:CGRectMake(px + pw - 24, py + 2, 24, 18)]];
-    py += 32;
+    [sv addSubview:[self makeLabel:@"Accent color" frame:CGRectMake(px, py, pw - 30, 18)]];
+    [sv addSubview:[self makeColorSwatch:UI_COLOR_ACCENT frame:CGRectMake(px + pw - 20, py + 2, 20, 15)]];
+    py += 26;
     
     // Subscription text with blue timer
-    UILabel *subLabel = [[UILabel alloc] initWithFrame:CGRectMake(px, py, pw, 20)];
+    UILabel *subLabel = [[UILabel alloc] initWithFrame:CGRectMake(px, py, pw, 18)];
     NSMutableAttributedString *subStr = [[NSMutableAttributedString alloc] initWithString:@"Subscription time left: " attributes:@{
         NSForegroundColorAttributeName: UI_COLOR_TEXT_MAIN,
-        NSFontAttributeName: [UIFont systemFontOfSize:11.5f weight:UIFontWeightMedium]
+        NSFontAttributeName: [UIFont systemFontOfSize:10.5f weight:UIFontWeightMedium]
     }];
     [subStr appendAttributedString:[[NSAttributedString alloc] initWithString:@"16 days, 23 hours, 52 minutes, 26 seconds" attributes:@{
         NSForegroundColorAttributeName: UI_COLOR_ACCENT_TEXT,
-        NSFontAttributeName: [UIFont systemFontOfSize:11.5f weight:UIFontWeightMedium]
+        NSFontAttributeName: [UIFont systemFontOfSize:10.5f weight:UIFontWeightMedium]
     }]];
     subLabel.attributedText = subStr;
     subLabel.adjustsFontSizeToFitWidth = YES;
     [sv addSubview:subLabel];
-    py += 24;
+    py += 20;
     
     // Build text with blue version tags
-    UILabel *buildLabel = [[UILabel alloc] initWithFrame:CGRectMake(px, py, pw, 20)];
+    UILabel *buildLabel = [[UILabel alloc] initWithFrame:CGRectMake(px, py, pw, 18)];
     NSMutableAttributedString *bldStr = [[NSMutableAttributedString alloc] initWithString:@"Build at " attributes:@{
         NSForegroundColorAttributeName: UI_COLOR_TEXT_MAIN,
-        NSFontAttributeName: [UIFont systemFontOfSize:11.5f weight:UIFontWeightMedium]
+        NSFontAttributeName: [UIFont systemFontOfSize:10.5f weight:UIFontWeightMedium]
     }];
     [bldStr appendAttributedString:[[NSAttributedString alloc] initWithString:@"Jan 20 2026 22:05:22 - 1.7.1" attributes:@{
         NSForegroundColorAttributeName: UI_COLOR_ACCENT_TEXT,
-        NSFontAttributeName: [UIFont systemFontOfSize:11.5f weight:UIFontWeightMedium]
+        NSFontAttributeName: [UIFont systemFontOfSize:10.5f weight:UIFontWeightMedium]
     }]];
     [bldStr appendAttributedString:[[NSAttributedString alloc] initWithString:@" for game version " attributes:@{
         NSForegroundColorAttributeName: UI_COLOR_TEXT_MAIN,
-        NSFontAttributeName: [UIFont systemFontOfSize:11.5f weight:UIFontWeightMedium]
+        NSFontAttributeName: [UIFont systemFontOfSize:10.5f weight:UIFontWeightMedium]
     }]];
     [bldStr appendAttributedString:[[NSAttributedString alloc] initWithString:@"1.120.X" attributes:@{
         NSForegroundColorAttributeName: UI_COLOR_ACCENT_TEXT,
-        NSFontAttributeName: [UIFont systemFontOfSize:11.5f weight:UIFontWeightMedium]
+        NSFontAttributeName: [UIFont systemFontOfSize:10.5f weight:UIFontWeightMedium]
     }]];
     buildLabel.attributedText = bldStr;
     buildLabel.adjustsFontSizeToFitWidth = YES;
     [sv addSubview:buildLabel];
-    py += 30;
+    py += 24;
     
     // Streamproof
     CustomCheckbox *streamCheck = [[CustomCheckbox alloc] initWithTitle:@"Streamproof" checked:NO];
-    streamCheck.frame = CGRectMake(px, py, pw, 26);
+    streamCheck.frame = CGRectMake(px, py, pw, 22);
     [sv addSubview:streamCheck];
-    py += 32;
+    py += 26;
     
     // Language
-    [sv addSubview:[self makeLabel:@"Language" frame:CGRectMake(px, py, pw, 18)]];
-    py += 22;
-    [sv addSubview:[self makeDropdown:@"English" frame:CGRectMake(px, py, pw, 32)]];
-    py += 42;
+    [sv addSubview:[self makeLabel:@"Language" frame:CGRectMake(px, py, pw, 16)]];
+    py += 17;
+    [sv addSubview:[self makeDropdown:@"English" frame:CGRectMake(px, py, pw, 26)]];
+    py += 34;
     
     // Royal Blue Action Buttons
-    [sv addSubview:[self makeBigBlueButton:@"Enable silent mode" frame:CGRectMake(px, py, pw, 36)]];
-    py += 44;
-    [sv addSubview:[self makeBigBlueButton:@"Save settings" frame:CGRectMake(px, py, pw, 36)]];
-    py += 44;
-    [sv addSubview:[self makeBigBlueButton:@"Load settings" frame:CGRectMake(px, py, pw, 36)]];
-    py += 44;
+    [sv addSubview:[self makeBigBlueButton:@"Enable silent mode" frame:CGRectMake(px, py, pw, 28)]];
+    py += 34;
+    [sv addSubview:[self makeBigBlueButton:@"Save settings" frame:CGRectMake(px, py, pw, 28)]];
+    py += 34;
+    [sv addSubview:[self makeBigBlueButton:@"Load settings" frame:CGRectMake(px, py, pw, 28)]];
+    py += 34;
     
-    sv.contentSize = CGSizeMake(w, py + 15);
+    sv.contentSize = CGSizeMake(w, py + 10);
     return sv;
 }
 
@@ -616,7 +766,7 @@ extern "C" void initAntiCheatBypass();
 - (UILabel *)makeLabel:(NSString *)text frame:(CGRect)frame {
     UILabel *l = [[UILabel alloc] initWithFrame:frame];
     l.text = text;
-    l.font = [UIFont systemFontOfSize:12.5f weight:UIFontWeightMedium];
+    l.font = [UIFont systemFontOfSize:11.5f weight:UIFontWeightRegular];
     l.textColor = UI_COLOR_TEXT_MAIN;
     return l;
 }
@@ -624,19 +774,19 @@ extern "C" void initAntiCheatBypass();
 - (UIView *)makeDropdown:(NSString *)title frame:(CGRect)frame {
     UIView *box = [[UIView alloc] initWithFrame:frame];
     box.backgroundColor = UI_COLOR_BOX_BG;
-    box.layer.cornerRadius = 6.0f;
-    box.layer.borderWidth = 1.0f;
+    box.layer.cornerRadius = 4.5f;
+    box.layer.borderWidth = 0.8f;
     box.layer.borderColor = UI_COLOR_BOX_BORDER.CGColor;
     
-    UILabel *l = [[UILabel alloc] initWithFrame:CGRectMake(12, 0, frame.size.width - 36, frame.size.height)];
+    UILabel *l = [[UILabel alloc] initWithFrame:CGRectMake(10, 0, frame.size.width - 28, frame.size.height)];
     l.text = title;
-    l.font = [UIFont systemFontOfSize:12.5f weight:UIFontWeightMedium];
+    l.font = [UIFont systemFontOfSize:11.5f weight:UIFontWeightRegular];
     l.textColor = UI_COLOR_TEXT_MAIN;
     [box addSubview:l];
     
-    UILabel *arr = [[UILabel alloc] initWithFrame:CGRectMake(frame.size.width - 24, 0, 18, frame.size.height)];
+    UILabel *arr = [[UILabel alloc] initWithFrame:CGRectMake(frame.size.width - 20, 0, 16, frame.size.height)];
     arr.text = @"\u2304";
-    arr.font = [UIFont systemFontOfSize:14 weight:UIFontWeightBold];
+    arr.font = [UIFont systemFontOfSize:13 weight:UIFontWeightBold];
     arr.textColor = UI_COLOR_TEXT_MUTED;
     [box addSubview:arr];
     
@@ -646,36 +796,36 @@ extern "C" void initAntiCheatBypass();
 - (UIView *)makeColorSwatch:(UIColor *)color frame:(CGRect)frame {
     UIView *v = [[UIView alloc] initWithFrame:frame];
     v.backgroundColor = color;
-    v.layer.cornerRadius = 4.5f;
-    v.layer.borderWidth = 0.8f;
+    v.layer.cornerRadius = 3.5f;
+    v.layer.borderWidth = 0.6f;
     v.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.15].CGColor;
     return v;
 }
 
 - (UIView *)makeSliderRow:(NSString *)name value:(NSString *)val defaultVal:(float)defVal y:(CGFloat *)py width:(CGFloat)pw x:(CGFloat)px {
-    UIView *container = [[UIView alloc] initWithFrame:CGRectMake(px, *py, pw, 46)];
+    UIView *container = [[UIView alloc] initWithFrame:CGRectMake(px, *py, pw, 38)];
     
-    UILabel *titleL = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, pw - 70, 18)];
+    UILabel *titleL = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, pw - 60, 16)];
     titleL.text = name;
-    titleL.font = [UIFont systemFontOfSize:12.5f weight:UIFontWeightMedium];
+    titleL.font = [UIFont systemFontOfSize:11.5f weight:UIFontWeightRegular];
     titleL.textColor = UI_COLOR_TEXT_MAIN;
     [container addSubview:titleL];
     
-    UILabel *valL = [[UILabel alloc] initWithFrame:CGRectMake(pw - 65, 0, 65, 18)];
+    UILabel *valL = [[UILabel alloc] initWithFrame:CGRectMake(pw - 55, 0, 55, 16)];
     valL.text = val;
-    valL.font = [UIFont systemFontOfSize:12.5f weight:UIFontWeightBold];
+    valL.font = [UIFont systemFontOfSize:11.5f weight:UIFontWeightBold];
     valL.textColor = UI_COLOR_ACCENT;
     valL.textAlignment = NSTextAlignmentRight;
     [container addSubview:valL];
     
-    UISlider *slider = [[UISlider alloc] initWithFrame:CGRectMake(0, 22, pw, 20)];
+    UISlider *slider = [[UISlider alloc] initWithFrame:CGRectMake(0, 18, pw, 18)];
     slider.minimumTrackTintColor = UI_COLOR_ACCENT;
     slider.maximumTrackTintColor = UI_COLOR_BOX_BG;
     slider.thumbTintColor = UI_COLOR_ACCENT;
     slider.value = defVal;
     [container addSubview:slider];
     
-    *py += 52;
+    *py += 44;
     return container;
 }
 
@@ -683,10 +833,10 @@ extern "C" void initAntiCheatBypass();
     UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
     btn.frame = frame;
     btn.backgroundColor = UI_COLOR_ACCENT;
-    btn.layer.cornerRadius = 8.0f;
+    btn.layer.cornerRadius = 6.0f;
     [btn setTitle:title forState:UIControlStateNormal];
     [btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    btn.titleLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightBold];
+    btn.titleLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightBold];
     return btn;
 }
 
@@ -698,31 +848,50 @@ extern "C" void initAntiCheatBypass();
 - (void)selectTab:(NSInteger)index {
     _currentTabIndex = index;
     
-    NSArray *headers = @[
-        @{@"icon": @"🎯", @"title": @"AIMBOT", @"sub": @"Automatically aim at enemies."},
-        @{@"icon": @"👁", @"title": @"VISUALS", @"sub": @"Visual improvements."},
-        @{@"icon": @"📦", @"title": @"MISC", @"sub": @"Game enhancements."},
-        @{@"icon": @"⚙", @"title": @"SETTINGS", @"sub": @"Configure options."}
+    NSArray *titles = @[@"AIMBOT", @"VISUALS", @"MISC", @"SETTINGS"];
+    NSArray *subs = @[
+        @"Automatically aim at enemies.",
+        @"Visual improvements.",
+        @"Game enhancements.",
+        @"Configure options."
     ];
     
-    _headerIconLabel.text = headers[index][@"icon"];
-    _headerTitleLabel.text = headers[index][@"title"];
-    _headerSubLabel.text = headers[index][@"sub"];
+    CGSize iconSize = CGSizeMake(16, 16);
+    UIImage *activeHeaderIcon = nil;
+    if (index == 0) activeHeaderIcon = [IconHelper drawAimbotIconWithColor:UI_COLOR_ACCENT size:iconSize];
+    else if (index == 1) activeHeaderIcon = [IconHelper drawVisualsIconWithColor:UI_COLOR_ACCENT size:iconSize];
+    else if (index == 2) activeHeaderIcon = [IconHelper drawMiscIconWithColor:UI_COLOR_ACCENT size:iconSize];
+    else activeHeaderIcon = [IconHelper drawSettingsIconWithColor:UI_COLOR_ACCENT size:iconSize];
+    
+    _headerIconView.image = activeHeaderIcon;
+    _headerTitleLabel.text = titles[index];
+    _headerSubLabel.text = subs[index];
     
     // Auto adjust header title width based on text
-    CGFloat titleW = (index == 3) ? 75.0f : ((index == 1) ? 68.0f : ((index == 0) ? 65.0f : 45.0f));
-    _headerTitleLabel.frame = CGRectMake(36, 9, titleW, 20);
-    _headerDividerLabel.frame = CGRectMake(36 + titleW + 6, 9, 10, 20);
-    CGFloat subX = 36 + titleW + 20;
-    _headerSubLabel.frame = CGRectMake(subX, 9, _headerPillView.bounds.size.width - subX - 8, 20);
+    CGFloat titleW = (index == 3) ? 62.0f : ((index == 1) ? 56.0f : ((index == 0) ? 52.0f : 36.0f));
+    _headerTitleLabel.frame = CGRectMake(30, 6, titleW, 18);
+    _headerDividerLabel.frame = CGRectMake(30 + titleW + 5, 6, 8, 18);
+    CGFloat subX = 30 + titleW + 16;
+    _headerSubLabel.frame = CGRectMake(subX, 6, _headerPillView.bounds.size.width - subX - 6, 18);
     
+    // Update Sidebar tabs
+    CGSize tabIconSize = CGSizeMake(18, 18);
     for (int i = 0; i < _tabButtons.count; i++) {
         UIButton *btn = _tabButtons[i];
         UIView *bg = _tabActiveBgs[i];
         UIView *ind = _tabIndicators[i];
+        UIImageView *iconV = _tabIconViews[i];
         UILabel *nameL = [btn viewWithTag:102];
         
-        if (i == index) {
+        BOOL isActive = (i == index);
+        UIColor *iconColor = isActive ? [UIColor whiteColor] : UI_COLOR_TEXT_MUTED;
+        
+        if (i == 0) iconV.image = [IconHelper drawAimbotIconWithColor:iconColor size:tabIconSize];
+        else if (i == 1) iconV.image = [IconHelper drawVisualsIconWithColor:iconColor size:tabIconSize];
+        else if (i == 2) iconV.image = [IconHelper drawMiscIconWithColor:iconColor size:tabIconSize];
+        else if (i == 3) iconV.image = [IconHelper drawSettingsIconWithColor:iconColor size:tabIconSize];
+        
+        if (isActive) {
             bg.hidden = NO;
             ind.hidden = NO;
             nameL.textColor = [UIColor whiteColor];
