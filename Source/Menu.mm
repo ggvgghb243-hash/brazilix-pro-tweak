@@ -29,6 +29,9 @@
 #define UI_COLOR_HEADER_BG   [UIColor colorWithRed:13.0/255.0 green:17.0/255.0 blue:28.0/255.0 alpha:1.0]
 #define UI_COLOR_HEADER_BORDER [UIColor colorWithRed:22.0/255.0 green:30.0/255.0 blue:48.0/255.0 alpha:1.0]
 
+// Forward declaration
+@class BrazilixMenu;
+
 // ===== VECTOR ICON GENERATOR (NO EMOJIS) =====
 @interface IconHelper : NSObject
 + (UIImage *)drawAimbotIconWithColor:(UIColor *)color size:(CGSize)size;
@@ -245,6 +248,19 @@
 }
 @end
 
+// ===== INTERACTIVE DROPDOWN CONTROL WITH SELECTION POPUP =====
+@interface CustomDropdown : UIControl
+@property (nonatomic, strong) UILabel *titleLabel;
+@property (nonatomic, strong) UILabel *arrowLabel;
+@property (nonatomic, strong) NSArray<NSString *> *options;
+@property (nonatomic, assign) NSInteger selectedIndex;
+@property (nonatomic, copy) NSString *dropdownHeader;
+@property (nonatomic, copy) void (^onSelectionChanged)(NSString *selected, NSInteger index);
+@property (nonatomic, weak) BrazilixMenu *menuRef;
+- (instancetype)initWithHeader:(NSString *)header options:(NSArray<NSString *> *)options defaultIndex:(NSInteger)index menu:(BrazilixMenu *)menu;
+- (void)setSelectedIndex:(NSInteger)index;
+@end
+
 // ===== MAIN BRAZILIX MENU =====
 @interface BrazilixMenu : NSObject
 @property (nonatomic, strong) UIView *menuView;
@@ -263,6 +279,13 @@
 @property (nonatomic, strong) NSArray<UIScrollView *> *tabViews;
 @property (nonatomic, assign) NSInteger currentTabIndex;
 
+// Floating dropdown picker modal
+@property (nonatomic, strong) UIView *pickerOverlayView;
+@property (nonatomic, strong) UIView *pickerCardView;
+@property (nonatomic, strong) UILabel *pickerTitleLabel;
+@property (nonatomic, strong) UIScrollView *pickerScrollView;
+@property (nonatomic, strong) CustomDropdown *activeDropdown;
+
 @property (nonatomic, strong) CADisplayLink *displayLink;
 @property (nonatomic, assign) CGPoint lastPoint;
 
@@ -276,6 +299,64 @@
 @property (nonatomic, strong) CustomCheckbox *skelCheck;
 @property (nonatomic, strong) CustomCheckbox *countCheck;
 @property (nonatomic, strong) CustomCheckbox *fogCheck;
+
+- (void)showDropdownPickerFor:(CustomDropdown *)dropdown;
+- (void)hideDropdownPicker;
+@end
+
+@implementation CustomDropdown
+- (instancetype)initWithHeader:(NSString *)header options:(NSArray<NSString *> *)options defaultIndex:(NSInteger)index menu:(BrazilixMenu *)menu {
+    self = [super initWithFrame:CGRectZero];
+    if (self) {
+        _dropdownHeader = header;
+        _options = options;
+        _selectedIndex = (index >= 0 && index < options.count) ? index : 0;
+        _menuRef = menu;
+        
+        self.backgroundColor = UI_COLOR_BOX_BG;
+        self.layer.cornerRadius = 4.5f;
+        self.layer.borderWidth = 0.8f;
+        self.layer.borderColor = UI_COLOR_BOX_BORDER.CGColor;
+        self.clipsToBounds = YES;
+        
+        _titleLabel = [[UILabel alloc] init];
+        _titleLabel.text = _options[_selectedIndex];
+        _titleLabel.font = [UIFont systemFontOfSize:11.5f weight:UIFontWeightRegular];
+        _titleLabel.textColor = UI_COLOR_TEXT_MAIN;
+        _titleLabel.userInteractionEnabled = NO;
+        [self addSubview:_titleLabel];
+        
+        _arrowLabel = [[UILabel alloc] init];
+        _arrowLabel.text = @"\u2304";
+        _arrowLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightBold];
+        _arrowLabel.textColor = UI_COLOR_TEXT_MUTED;
+        _arrowLabel.textAlignment = NSTextAlignmentCenter;
+        _arrowLabel.userInteractionEnabled = NO;
+        [self addSubview:_arrowLabel];
+        
+        [self addTarget:self action:@selector(dropdownTapped) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return self;
+}
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    _titleLabel.frame = CGRectMake(10, 0, self.bounds.size.width - 32, self.bounds.size.height);
+    _arrowLabel.frame = CGRectMake(self.bounds.size.width - 22, 0, 18, self.bounds.size.height);
+}
+
+- (void)setSelectedIndex:(NSInteger)index {
+    if (index >= 0 && index < _options.count) {
+        _selectedIndex = index;
+        _titleLabel.text = _options[index];
+    }
+}
+
+- (void)dropdownTapped {
+    if (_menuRef) {
+        [_menuRef showDropdownPickerFor:self];
+    }
+}
 @end
 
 @implementation BrazilixMenu
@@ -330,9 +411,9 @@ extern "C" void initAntiCheatBypass();
         }
     }
     
-    // Exactly scaled menu dimensions matching screenshots
+    // Scaled menu dimensions matching screenshots
     CGFloat menuWidth = 380.0f;
-    CGFloat menuHeight = 275.0f;
+    CGFloat menuHeight = 280.0f;
     CGFloat x = (kWidth - menuWidth) * 0.5f;
     CGFloat y = (kHeight - menuHeight) * 0.5f;
     
@@ -461,11 +542,134 @@ extern "C" void initAntiCheatBypass();
         [_contentContainer addSubview:v];
     }
     
+    // Build Interactive Dropdown Picker Overlay
+    [self setupPickerOverlay];
+    
     // Select Aimbot by default
     [self selectTab:0];
 }
 
-// ===== TAB 0: AIMBOT VIEW =====
+// ===== DROPDOWN PICKER OVERLAY MODAL =====
+- (void)setupPickerOverlay {
+    _pickerOverlayView = [[UIView alloc] initWithFrame:_menuView.bounds];
+    _pickerOverlayView.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.65f];
+    _pickerOverlayView.hidden = YES;
+    _pickerOverlayView.userInteractionEnabled = YES;
+    
+    // Dismiss on background tap
+    UITapGestureRecognizer *tapBg = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(hideDropdownPicker)];
+    [_pickerOverlayView addGestureRecognizer:tapBg];
+    
+    // Picker Center Card
+    CGFloat cardW = 260.0f;
+    CGFloat cardH = 170.0f;
+    _pickerCardView = [[UIView alloc] initWithFrame:CGRectMake((_menuView.bounds.size.width - cardW)/2, (_menuView.bounds.size.height - cardH)/2, cardW, cardH)];
+    _pickerCardView.backgroundColor = [UIColor colorWithRed:14.0/255.0 green:18.0/255.0 blue:30.0/255.0 alpha:0.98];
+    _pickerCardView.layer.cornerRadius = 8.0f;
+    _pickerCardView.layer.borderWidth = 1.0f;
+    _pickerCardView.layer.borderColor = UI_COLOR_BOX_BORDER.CGColor;
+    _pickerCardView.clipsToBounds = YES;
+    [_pickerOverlayView addSubview:_pickerCardView];
+    
+    // Header Bar
+    UIView *cardHeader = [[UIView alloc] initWithFrame:CGRectMake(0, 0, cardW, 30)];
+    cardHeader.backgroundColor = UI_COLOR_HEADER_BG;
+    [_pickerCardView addSubview:cardHeader];
+    
+    _pickerTitleLabel = [[UILabel alloc] initWithFrame:CGRectMake(10, 5, cardW - 40, 20)];
+    _pickerTitleLabel.font = [UIFont systemFontOfSize:11 weight:UIFontWeightBold];
+    _pickerTitleLabel.textColor = UI_COLOR_ACCENT;
+    [cardHeader addSubview:_pickerTitleLabel];
+    
+    UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    closeBtn.frame = CGRectMake(cardW - 28, 2, 26, 26);
+    [closeBtn setTitle:@"✕" forState:UIControlStateNormal];
+    [closeBtn setTitleColor:UI_COLOR_TEXT_MUTED forState:UIControlStateNormal];
+    closeBtn.titleLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightBold];
+    [closeBtn addTarget:self action:@selector(hideDropdownPicker) forControlEvents:UIControlEventTouchUpInside];
+    [cardHeader addSubview:closeBtn];
+    
+    // Scrollable Options List
+    _pickerScrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 30, cardW, cardH - 30)];
+    _pickerScrollView.showsVerticalScrollIndicator = YES;
+    _pickerScrollView.indicatorStyle = UIScrollViewIndicatorStyleWhite;
+    [_pickerCardView addSubview:_pickerScrollView];
+    
+    [_menuView addSubview:_pickerOverlayView];
+}
+
+- (void)showDropdownPickerFor:(CustomDropdown *)dropdown {
+    _activeDropdown = dropdown;
+    _pickerTitleLabel.text = dropdown.dropdownHeader ? dropdown.dropdownHeader : @"Select Option";
+    
+    // Clear old buttons
+    for (UIView *v in _pickerScrollView.subviews) {
+        [v removeFromSuperview];
+    }
+    
+    CGFloat py = 4.0f;
+    CGFloat btnW = _pickerCardView.bounds.size.width - 12.0f;
+    CGFloat btnH = 28.0f;
+    
+    for (int i = 0; i < dropdown.options.count; i++) {
+        NSString *opt = dropdown.options[i];
+        BOOL isSel = (i == dropdown.selectedIndex);
+        
+        UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
+        btn.frame = CGRectMake(6, py, btnW, btnH);
+        btn.tag = i;
+        btn.layer.cornerRadius = 4.0f;
+        btn.backgroundColor = isSel ? UI_COLOR_ACCENT : UI_COLOR_BOX_BG;
+        
+        UILabel *textL = [[UILabel alloc] initWithFrame:CGRectMake(10, 0, btnW - 35, btnH)];
+        textL.text = opt;
+        textL.font = [UIFont systemFontOfSize:11.5 weight:isSel ? UIFontWeightBold : UIFontWeightRegular];
+        textL.textColor = [UIColor whiteColor];
+        textL.userInteractionEnabled = NO;
+        [btn addSubview:textL];
+        
+        if (isSel) {
+            UILabel *chk = [[UILabel alloc] initWithFrame:CGRectMake(btnW - 24, 0, 18, btnH)];
+            chk.text = @"✓";
+            chk.font = [UIFont systemFontOfSize:12 weight:UIFontWeightBold];
+            chk.textColor = [UIColor whiteColor];
+            chk.textAlignment = NSTextAlignmentCenter;
+            chk.userInteractionEnabled = NO;
+            [btn addSubview:chk];
+        }
+        
+        [btn addTarget:self action:@selector(pickerOptionSelected:) forControlEvents:UIControlEventTouchUpInside];
+        [_pickerScrollView addSubview:btn];
+        py += btnH + 4.0f;
+    }
+    
+    _pickerScrollView.contentSize = CGSizeMake(_pickerCardView.bounds.size.width, py + 4.0f);
+    
+    // Resize card dynamically if fewer options
+    CGFloat targetCardH = MIN(py + 34.0f, 180.0f);
+    _pickerCardView.frame = CGRectMake((_menuView.bounds.size.width - 260.0f)/2, (_menuView.bounds.size.height - targetCardH)/2, 260.0f, targetCardH);
+    _pickerScrollView.frame = CGRectMake(0, 30, 260.0f, targetCardH - 30);
+    
+    _pickerOverlayView.hidden = NO;
+    [_menuView bringSubviewToFront:_pickerOverlayView];
+}
+
+- (void)pickerOptionSelected:(UIButton *)sender {
+    if (_activeDropdown) {
+        [_activeDropdown setSelectedIndex:sender.tag];
+        if (_activeDropdown.onSelectionChanged) {
+            _activeDropdown.onSelectionChanged(_activeDropdown.options[sender.tag], sender.tag);
+        }
+    }
+    [self hideDropdownPicker];
+}
+
+- (void)hideDropdownPicker {
+    _pickerOverlayView.hidden = YES;
+    _activeDropdown = nil;
+}
+
+// ===== TAB 0: AIMBOT VIEW (ENRICHED WITH REALISTIC FEATURES) =====
 - (UIScrollView *)buildAimbotViewWithWidth:(CGFloat)w height:(CGFloat)h {
     UIScrollView *sv = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 0, w, h)];
     sv.showsVerticalScrollIndicator = YES;
@@ -481,10 +685,12 @@ extern "C" void initAntiCheatBypass();
     [sv addSubview:masterCheck];
     py += 26;
     
-    // Aiming method
+    // Aiming method (Interactive Dropdown)
     [sv addSubview:[self makeLabel:@"Aiming method" frame:CGRectMake(px, py, pw, 16)]];
     py += 17;
-    [sv addSubview:[self makeDropdown:@"Silent aimbot" frame:CGRectMake(px, py, pw, 26)]];
+    CustomDropdown *aimMethodDrop = [[CustomDropdown alloc] initWithHeader:@"Aiming Method" options:@[@"Silent aimbot", @"Memory aimbot", @"Legit / Camera aim", @"Touch simulation"] defaultIndex:0 menu:self];
+    aimMethodDrop.frame = CGRectMake(px, py, pw, 26);
+    [sv addSubview:aimMethodDrop];
     py += 31;
     
     // Show FOV circle with right color swatch
@@ -494,29 +700,62 @@ extern "C" void initAntiCheatBypass();
     [sv addSubview:[self makeColorSwatch:[UIColor whiteColor] frame:CGRectMake(px + pw - 20, py + 3, 20, 15)]];
     py += 26;
     
-    // Ignore types
+    // FOV Radius Slider
+    [sv addSubview:[self makeSliderRow:@"FOV radius" value:@"60.0°" defaultVal:0.35f y:&py width:pw x:px]];
+    
+    // Lock-on Speed Slider
+    [sv addSubview:[self makeSliderRow:@"Lock-on speed" value:@"0.0" defaultVal:0.0f y:&py width:pw x:px]];
+    
+    // Max Distance Slider
+    [sv addSubview:[self makeSliderRow:@"Max aim distance" value:@"120.0m" defaultVal:0.40f y:&py width:pw x:px]];
+    
+    // Ignore types (Interactive Dropdown)
     [sv addSubview:[self makeLabel:@"Ignore types" frame:CGRectMake(px, py, pw, 16)]];
     py += 17;
-    [sv addSubview:[self makeDropdown:@"Invisible, Knocked" frame:CGRectMake(px, py, pw, 26)]];
+    CustomDropdown *ignoreDrop = [[CustomDropdown alloc] initWithHeader:@"Ignore Types" options:@[@"Invisible, Knocked", @"Invisible only", @"Knocked only", @"Teammates only", @"None"] defaultIndex:0 menu:self];
+    ignoreDrop.frame = CGRectMake(px, py, pw, 26);
+    [sv addSubview:ignoreDrop];
     py += 31;
     
-    // Hitbox
+    // Hitbox (Interactive Dropdown)
     [sv addSubview:[self makeLabel:@"Hitbox" frame:CGRectMake(px, py, pw, 16)]];
     py += 17;
-    [sv addSubview:[self makeDropdown:@"Head" frame:CGRectMake(px, py, pw, 26)]];
+    CustomDropdown *hitboxDrop = [[CustomDropdown alloc] initWithHeader:@"Hitbox Priority" options:@[@"Head", @"Neck", @"Chest / Body", @"Nearest bone"] defaultIndex:0 menu:self];
+    hitboxDrop.frame = CGRectMake(px, py, pw, 26);
+    [sv addSubview:hitboxDrop];
     py += 31;
     
-    // Target priority
+    // Target priority (Interactive Dropdown)
     [sv addSubview:[self makeLabel:@"Target priority" frame:CGRectMake(px, py, pw, 16)]];
     py += 17;
-    [sv addSubview:[self makeDropdown:@"Closest to crosshair" frame:CGRectMake(px, py, pw, 26)]];
-    py += 34;
+    CustomDropdown *priorityDrop = [[CustomDropdown alloc] initWithHeader:@"Target Priority" options:@[@"Closest to crosshair", @"Lowest health", @"Closest distance", @"Most visible"] defaultIndex:0 menu:self];
+    priorityDrop.frame = CGRectMake(px, py, pw, 26);
+    [sv addSubview:priorityDrop];
+    py += 31;
+    
+    // Force Lock
+    CustomCheckbox *forceLock = [[CustomCheckbox alloc] initWithTitle:@"Force lock-on" checked:NO];
+    forceLock.frame = CGRectMake(px, py, pw, 22);
+    [sv addSubview:forceLock];
+    py += 26;
+    
+    // Auto-fire
+    CustomCheckbox *autoShoot = [[CustomCheckbox alloc] initWithTitle:@"Auto-fire when locked" checked:NO];
+    autoShoot.frame = CGRectMake(px, py, pw, 22);
+    [sv addSubview:autoShoot];
+    py += 26;
+    
+    // Visible check
+    CustomCheckbox *visCheck = [[CustomCheckbox alloc] initWithTitle:@"Visible target check" checked:YES];
+    visCheck.frame = CGRectMake(px, py, pw, 22);
+    [sv addSubview:visCheck];
+    py += 30;
     
     sv.contentSize = CGSizeMake(w, py + 10);
     return sv;
 }
 
-// ===== TAB 1: VISUALS VIEW (CONNECTED TO ENGINE) =====
+// ===== TAB 1: VISUALS VIEW (ENRICHED WITH REALISTIC FEATURES) =====
 - (UIScrollView *)buildVisualsViewWithWidth:(CGFloat)w height:(CGFloat)h {
     UIScrollView *sv = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 0, w, h)];
     sv.showsVerticalScrollIndicator = YES;
@@ -545,6 +784,14 @@ extern "C" void initAntiCheatBypass();
     [sv addSubview:[self makeColorSwatch:[UIColor whiteColor] frame:CGRectMake(px + pw - 20, py + 3, 20, 15)]];
     py += 26;
     
+    // Snapline Origin (Interactive Dropdown)
+    [sv addSubview:[self makeLabel:@"Line origin" frame:CGRectMake(px, py, pw, 16)]];
+    py += 17;
+    CustomDropdown *linePosDrop = [[CustomDropdown alloc] initWithHeader:@"Line Origin" options:@[@"Bottom screen", @"Center / Crosshair", @"Top screen"] defaultIndex:0 menu:self];
+    linePosDrop.frame = CGRectMake(px, py, pw, 26);
+    [sv addSubview:linePosDrop];
+    py += 31;
+    
     // Line fire material (Unchecked)
     CustomCheckbox *fireMatCheck = [[CustomCheckbox alloc] initWithTitle:@"Line fire material" checked:NO];
     fireMatCheck.frame = CGRectMake(px, py, pw, 22);
@@ -561,6 +808,14 @@ extern "C" void initAntiCheatBypass();
     [sv addSubview:[self makeColorSwatch:[UIColor colorWithRed:255.0/255.0 green:35.0/255.0 blue:35.0/255.0 alpha:1.0] frame:CGRectMake(px + pw - 44, py + 3, 19, 15)]];
     [sv addSubview:[self makeColorSwatch:[UIColor colorWithRed:25.0/255.0 green:225.0/255.0 blue:55.0/255.0 alpha:1.0] frame:CGRectMake(px + pw - 20, py + 3, 19, 15)]];
     py += 26;
+    
+    // Box Style (Interactive Dropdown)
+    [sv addSubview:[self makeLabel:@"Box style" frame:CGRectMake(px, py, pw, 16)]];
+    py += 17;
+    CustomDropdown *boxStyleDrop = [[CustomDropdown alloc] initWithHeader:@"Box Style" options:@[@"2D Full Box", @"Corner Box", @"Filled Box", @"3D Bounding Box"] defaultIndex:0 menu:self];
+    boxStyleDrop.frame = CGRectMake(px, py, pw, 26);
+    [sv addSubview:boxStyleDrop];
+    py += 31;
     
     // Health
     _healthCheck = [[CustomCheckbox alloc] initWithTitle:@"Health" checked:Vars.Health];
@@ -602,6 +857,18 @@ extern "C" void initAntiCheatBypass();
     
     // Skeleton bone thickness slider (2.0)
     [sv addSubview:[self makeSliderRow:@"Skeleton bone thickness" value:@"2.0" defaultVal:0.4f y:&py width:pw x:px]];
+    
+    // Head Circle
+    CustomCheckbox *headCircle = [[CustomCheckbox alloc] initWithTitle:@"Head circle / dot" checked:NO];
+    headCircle.frame = CGRectMake(px, py, pw, 22);
+    [sv addSubview:headCircle];
+    py += 26;
+    
+    // Item / Loot ESP
+    CustomCheckbox *itemESP = [[CustomCheckbox alloc] initWithTitle:@"Weapons & Loot ESP" checked:NO];
+    itemESP.frame = CGRectMake(px, py, pw, 22);
+    [sv addSubview:itemESP];
+    py += 26;
     
     // Nearby enemies count
     _countCheck = [[CustomCheckbox alloc] initWithTitle:@"Nearby enemies count" checked:Vars.counts];
@@ -663,14 +930,22 @@ extern "C" void initAntiCheatBypass();
     [sv addSubview:iceWallCheck];
     py += 24;
     
-    CustomCheckbox *aspectCheck = [[CustomCheckbox alloc] initWithTitle:@"Aspect ratio" checked:NO];
+    CustomCheckbox *aspectCheck = [[CustomCheckbox alloc] initWithTitle:@"Aspect ratio (iPad View)" checked:NO];
     aspectCheck.frame = CGRectMake(px, py, pw, 22);
     [sv addSubview:aspectCheck];
-    py += 24;
+    py += 26;
+    
+    // Aspect ratio FOV scale slider
+    [sv addSubview:[self makeSliderRow:@"Camera zoom scale" value:@"1.2x" defaultVal:0.2f y:&py width:pw x:px]];
     
     CustomCheckbox *autoFireCheck = [[CustomCheckbox alloc] initWithTitle:@"Auto-fire" checked:NO];
     autoFireCheck.frame = CGRectMake(px, py, pw, 22);
     [sv addSubview:autoFireCheck];
+    py += 24;
+    
+    CustomCheckbox *fastSwitch = [[CustomCheckbox alloc] initWithTitle:@"Fast weapon switch" checked:NO];
+    fastSwitch.frame = CGRectMake(px, py, pw, 22);
+    [sv addSubview:fastSwitch];
     py += 28;
     
     sv.contentSize = CGSizeMake(w, py + 10);
@@ -744,10 +1019,12 @@ extern "C" void initAntiCheatBypass();
     [sv addSubview:streamCheck];
     py += 26;
     
-    // Language
+    // Language (Interactive Dropdown)
     [sv addSubview:[self makeLabel:@"Language" frame:CGRectMake(px, py, pw, 16)]];
     py += 17;
-    [sv addSubview:[self makeDropdown:@"English" frame:CGRectMake(px, py, pw, 26)]];
+    CustomDropdown *langDrop = [[CustomDropdown alloc] initWithHeader:@"Language" options:@[@"English", @"Español", @"Português", @"Русский", @"العربية", @"বাংলা"] defaultIndex:0 menu:self];
+    langDrop.frame = CGRectMake(px, py, pw, 26);
+    [sv addSubview:langDrop];
     py += 34;
     
     // Royal Blue Action Buttons
@@ -769,28 +1046,6 @@ extern "C" void initAntiCheatBypass();
     l.font = [UIFont systemFontOfSize:11.5f weight:UIFontWeightRegular];
     l.textColor = UI_COLOR_TEXT_MAIN;
     return l;
-}
-
-- (UIView *)makeDropdown:(NSString *)title frame:(CGRect)frame {
-    UIView *box = [[UIView alloc] initWithFrame:frame];
-    box.backgroundColor = UI_COLOR_BOX_BG;
-    box.layer.cornerRadius = 4.5f;
-    box.layer.borderWidth = 0.8f;
-    box.layer.borderColor = UI_COLOR_BOX_BORDER.CGColor;
-    
-    UILabel *l = [[UILabel alloc] initWithFrame:CGRectMake(10, 0, frame.size.width - 28, frame.size.height)];
-    l.text = title;
-    l.font = [UIFont systemFontOfSize:11.5f weight:UIFontWeightRegular];
-    l.textColor = UI_COLOR_TEXT_MAIN;
-    [box addSubview:l];
-    
-    UILabel *arr = [[UILabel alloc] initWithFrame:CGRectMake(frame.size.width - 20, 0, 16, frame.size.height)];
-    arr.text = @"\u2304";
-    arr.font = [UIFont systemFontOfSize:13 weight:UIFontWeightBold];
-    arr.textColor = UI_COLOR_TEXT_MUTED;
-    [box addSubview:arr];
-    
-    return box;
 }
 
 - (UIView *)makeColorSwatch:(UIColor *)color frame:(CGRect)frame {
