@@ -25,6 +25,7 @@ jobs:
       - name: Build Standalone IPA (.ipa)
         run: |
           SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path)
+          echo "Using SDK at: $SDKPATH"
           
           # Clean previous build
           rm -rf build output_ipa
@@ -32,7 +33,7 @@ jobs:
           mkdir -p output_ipa
           
           # Compile standalone App executable with the exact Menu & ESP UI
-          clang++ -arch arm64 -isysroot $SDKPATH -miphoneos-version-min=14.0 \
+          clang++ -arch arm64 -isysroot "$SDKPATH" -miphoneos-version-min=14.0 \
             -std=c++11 -fobjc-arc \
             -framework UIKit -framework Foundation -framework QuartzCore -framework CoreGraphics -framework AudioToolbox \
             Source/Menu.mm Source/AntiCheatBypass.mm \
@@ -84,6 +85,7 @@ jobs:
           zip -qr FluoriteMax.ipa Payload
           cd ..
           cp build/FluoriteMax.ipa output_ipa/FluoriteMax.ipa
+          ls -la output_ipa/
 
       - name: Setup Theos
         run: |
@@ -104,6 +106,7 @@ jobs:
           export THEOS=$HOME/theos
           make clean || true
           make package FINALPACKAGE=1 || true
+          ls -la packages/ || true
 
       - name: Upload Standalone .ipa Artifact
         uses: actions/upload-artifact@v4

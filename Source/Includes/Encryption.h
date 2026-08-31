@@ -25,7 +25,7 @@ void startAuthentication()  __attribute__((noinline));
     // I use current (compile time) as a seed
     // Convert time string (hh:mm:ss) into a number
     constexpr int seedToInt(char c) { return c - '0'; }
-    const int seed = seedToInt(__TIME__[7]) +
+    static const int seed = seedToInt(__TIME__[7]) +
                      seedToInt(__TIME__[6]) * 10 +
                      seedToInt(__TIME__[4]) * 60 +
                      seedToInt(__TIME__[3]) * 600 +
