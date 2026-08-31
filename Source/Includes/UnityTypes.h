@@ -1,4 +1,6 @@
 #pragma once
+#import <Foundation/Foundation.h>
+#include <string>
 
 template <typename T>
 struct monoArray
@@ -27,7 +29,7 @@ struct monoList {
     int version;
 
     T getItems(){
-        return items->getPointer();
+        return items ? items->getPointer() : nullptr;
     }
 
     int getSize(){
@@ -52,30 +54,30 @@ struct Dictionary {
     int size;
 
     K getKeys(){
-        return keys->getPointer();
+        return keys ? keys->getPointer() : nullptr;
     }
 
     V getValues(){
-        return values->getPointer();
+        return values ? values->getPointer() : nullptr;
     }
 
     int getNumKeys(){
-        return keys->getLength();
+        return keys ? keys->getLength() : 0;
     }
 
     int getNumValues(){
-        return values->getLength();
+        return values ? values->getLength() : 0;
     }
 
     int getSize(){
         return size;
     }
 };
+
 union intfloat {
     int i;
     float f;
 };
-
 
 typedef struct _monoString
 {
@@ -107,4 +109,4 @@ typedef struct _monoString
     {
       return std::string(toCString());
     }
-}monoString;
+} monoString;

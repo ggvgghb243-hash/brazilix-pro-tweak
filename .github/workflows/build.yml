@@ -11,12 +11,21 @@ jobs:
   build:
     name: Build Tweak (.deb) & Standalone App (.ipa)
     runs-on: macos-14
+    env:
+      DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Configure Developer Environment
+        run: |
+          sudo xcode-select -switch /Applications/Xcode.app || true
+          echo "Active Developer Dir: $(xcode-select -p)"
+          SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path)
+          echo "iOS SDK Path: $SDKPATH"
 
       - name: Install Build Tools
         run: |
@@ -25,15 +34,17 @@ jobs:
       - name: Build Standalone IPA (.ipa)
         run: |
           SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path)
-          echo "SDK Path: $SDKPATH"
+          echo "Building standalone app with SDK: $SDKPATH"
           
           # Clean and setup directories
           rm -rf build output_ipa
           mkdir -p build/Payload/FluoriteMax.app
           mkdir -p output_ipa
           
-          # Compile standalone App executable cleanly
-          clang++ -arch arm64 -isysroot "$SDKPATH" -miphoneos-version-min=14.0 \
+          # Compile standalone App executable targeting iOS arm64
+          clang++ -target arm64-apple-ios14.0 \
+            -isysroot "$SDKPATH" \
+            -miphoneos-version-min=14.0 \
             -std=c++17 -fobjc-arc -O2 \
             Source/Menu.mm \
             -framework UIKit -framework Foundation -framework QuartzCore -framework CoreGraphics -framework AudioToolbox \
@@ -77,7 +88,7 @@ jobs:
           </plist>
           EOF
           
-          # Sign binary
+          # Ad-hoc sign binary
           codesign -s - --force build/Payload/FluoriteMax.app/FluoriteMax || ldid -S build/Payload/FluoriteMax.app/FluoriteMax || true
           
           # Package IPA
