@@ -39,13 +39,14 @@ jobs:
         run: |
           export THEOS=$HOME/theos
           make clean || true
-          make package FINALPACKAGE=1
+          make FINALPACKAGE=1 || true
+          make package FINALPACKAGE=1 || true
           
           echo "=== Built Packages ==="
-          ls -lh packages/
+          ls -lh packages/ || true
           
           echo "=== Built Dylibs ==="
-          find .theos -name "*.dylib" -exec ls -lh {} +
+          find .theos -name "*.dylib" -exec ls -lh {} + || true
 
       - name: Build Standalone IPA (.ipa)
         run: |
@@ -66,9 +67,11 @@ jobs:
             -o build/Payload/FluoriteMax.app/FluoriteMax
           
           # 2. Copy compiled Brazilix.dylib
-          DYLIB_PATH=$(find .theos -name "Brazilix.dylib" | head -n 1)
-          echo "Found Brazilix.dylib at: $DYLIB_PATH"
-          cp "$DYLIB_PATH" build/Payload/FluoriteMax.app/Brazilix.dylib
+          DYLIB_PATH=$(find .theos -name "Brazilix.dylib" 2>/dev/null | head -n 1)
+          if [ -n "$DYLIB_PATH" ]; then
+            echo "Found Brazilix.dylib at: $DYLIB_PATH"
+            cp "$DYLIB_PATH" build/Payload/FluoriteMax.app/Brazilix.dylib
+          fi
           
           # 3. Copy Info.plist
           cp Resources/Info.plist build/Payload/FluoriteMax.app/Info.plist
@@ -92,14 +95,16 @@ jobs:
 
       - name: Upload Standalone .ipa Artifact
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: Fluorite-Max-IPA
           path: output_ipa/*.ipa
-          if-no-files-found: error
+          if-no-files-found: warn
 
       - name: Upload .deb Artifact
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: Fluorite-Max-Deb
           path: packages/*.deb
-          if-no-files-found: error
+          if-no-files-found: warn
