@@ -32,12 +32,11 @@ jobs:
           mkdir -p build/Payload/FluoriteMax.app
           mkdir -p output_ipa
           
-          # Compile standalone App executable with error details
+          # Compile standalone App executable cleanly
           clang++ -arch arm64 -isysroot "$SDKPATH" -miphoneos-version-min=14.0 \
             -std=c++17 -fobjc-arc -O2 \
-            -fmodules -fcxx-modules \
-            -framework UIKit -framework Foundation -framework QuartzCore -framework CoreGraphics -framework AudioToolbox \
             Source/Menu.mm \
+            -framework UIKit -framework Foundation -framework QuartzCore -framework CoreGraphics -framework AudioToolbox \
             -o build/Payload/FluoriteMax.app/FluoriteMax
           
           # Create Info.plist
