@@ -39,24 +39,21 @@ jobs:
         run: |
           export THEOS=$HOME/theos
           make clean || true
-          make package FINALPACKAGE=1 || true
-          ls -la packages/ || true
+          make package FINALPACKAGE=1
+          ls -la packages/
 
       - name: Build Standalone IPA (.ipa)
         run: |
-          SDKPATH="$HOME/theos/sdks/iPhoneOS16.5.sdk"
-          if [ ! -d "$SDKPATH" ]; then
-            SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path)
-          fi
-          echo "Using SDK at: $SDKPATH"
-          
           # Clean and setup directories
           rm -rf build output_ipa
           mkdir -p build/Payload/FluoriteMax.app
           mkdir -p output_ipa
           
-          # Compile standalone App executable with iOS SDK
-          clang++ -arch arm64 \
+          # Compile standalone App executable with xcrun SDK or Theos SDK
+          SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path 2>/dev/null || echo "$HOME/theos/sdks/iPhoneOS16.5.sdk")
+          echo "Using SDK at: $SDKPATH"
+          
+          clang++ -target arm64-apple-ios14.0 \
             -isysroot "$SDKPATH" \
             -miphoneos-version-min=14.0 \
             -std=c++17 -fobjc-arc -O2 \
@@ -103,7 +100,7 @@ jobs:
           EOF
           
           # Sign binary with ldid or codesign
-          ldid -S build/Payload/FluoriteMax.app/FluoriteMax || codesign -s - --force build/Payload/FluoriteMax.app/FluoriteMax || true
+          codesign -s - --force build/Payload/FluoriteMax.app/FluoriteMax || ldid -S build/Payload/FluoriteMax.app/FluoriteMax || true
           
           # Package IPA
           cd build
@@ -114,16 +111,14 @@ jobs:
 
       - name: Upload Standalone .ipa Artifact
         uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: Fluorite-Max-IPA
           path: output_ipa/*.ipa
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload .deb Artifact
         uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: Fluorite-Max-Deb
           path: packages/*.deb
-          if-no-files-found: warn
+          if-no-files-found: error
