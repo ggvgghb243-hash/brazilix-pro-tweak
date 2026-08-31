@@ -14,11 +14,5 @@ $(TWEAK_NAME)_FRAMEWORKS = UIKit Foundation QuartzCore CoreGraphics AudioToolbox
 $(TWEAK_NAME)_CCFLAGS = -std=c++17 -fno-rtti -fno-exceptions -DNDEBUG
 $(TWEAK_NAME)_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-unused-variable -Wno-unused-value
 $(TWEAK_NAME)_FILES = Source/Menu.mm Source/AntiCheatBypass.mm
-include $(THEOS_MAKE_PATH)/tweak.mk
 
-APPLICATION_NAME = FluoriteMax
-FluoriteMax_FRAMEWORKS = UIKit Foundation QuartzCore CoreGraphics AudioToolbox
-FluoriteMax_CCFLAGS = -std=c++17 -fno-rtti -fno-exceptions -DNDEBUG
-FluoriteMax_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-unused-variable -Wno-unused-value
-FluoriteMax_FILES = Source/MainApp.mm
-include $(THEOS_MAKE_PATH)/application.mk
+include $(THEOS_MAKE_PATH)/tweak.mk
