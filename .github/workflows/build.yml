@@ -1,4 +1,4 @@
-﻿name: Build iOS Tweak (.deb)
+name: Build iOS Tweak & Standalone IPA
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Build Tweak (.deb)
+    name: Build Tweak (.deb) & Standalone App (.ipa)
     runs-on: macos-14
 
     steps:
@@ -36,15 +36,84 @@ jobs:
           cd ..
           rm -rf ~/theos-sdks
 
-      - name: Build Package
+      - name: Build Tweak Package (.deb)
         run: |
           export THEOS=$HOME/theos
           make clean
           make package FINALPACKAGE=1
 
+      - name: Build Standalone IPA (.ipa)
+        run: |
+          SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path)
+          
+          # Create App Bundle structure
+          mkdir -p build/Payload/FluoriteMax.app
+          
+          # Compile standalone App executable with the exact Menu & ESP UI
+          clang++ -arch arm64 -isysroot $SDKPATH -miphoneos-version-min=14.0 \
+            -std=c++11 -fobjc-arc \
+            -framework UIKit -framework Foundation -framework QuartzCore -framework CoreGraphics -framework AudioToolbox \
+            Source/Menu.mm \
+            -o build/Payload/FluoriteMax.app/FluoriteMax
+          
+          # Create Info.plist
+          cat << 'EOF' > build/Payload/FluoriteMax.app/Info.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>FluoriteMax</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.fluoritemax.app</string>
+              <key>CFBundleName</key>
+              <string>Fluorite Max</string>
+              <key>CFBundleDisplayName</key>
+              <string>Fluorite Max</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>CFBundleVersion</key>
+              <string>1.0</string>
+              <key>LSRequiresIPhoneOS</key>
+              <true/>
+              <key>UIRequiresFullScreen</key>
+              <true/>
+              <key>UISupportedInterfaceOrientations</key>
+              <array>
+                  <string>UIInterfaceOrientationLandscapeLeft</string>
+                  <string>UIInterfaceOrientationLandscapeRight</string>
+              </array>
+              <key>UISupportedInterfaceOrientations~ipad</key>
+              <array>
+                  <string>UIInterfaceOrientationLandscapeLeft</string>
+                  <string>UIInterfaceOrientationLandscapeRight</string>
+              </array>
+          </dict>
+          </plist>
+          EOF
+          
+          # Sign binary with ldid
+          ldid -S build/Payload/FluoriteMax.app/FluoriteMax
+          
+          # Package IPA
+          cd build
+          zip -r FluoriteMax.ipa Payload
+          cd ..
+          mkdir -p output_ipa
+          cp build/FluoriteMax.ipa output_ipa/
+
       - name: Upload .deb Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Brazilix-Tweak-Deb
+          name: Fluorite-Max-Deb
           path: packages/*.deb
+          if-no-files-found: error
+
+      - name: Upload Standalone .ipa Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Fluorite-Max-IPA
+          path: output_ipa/*.ipa
           if-no-files-found: error

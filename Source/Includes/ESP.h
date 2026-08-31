@@ -240,10 +240,9 @@ inline Vector3 GetBonePosition(void *player, void *(*transformGetter)(void *)) {
 
 @end
 
-// ===== MAIN SAFE ESP FUNCTION =====
+// ===== MAIN SAFE ESP FUNCTION WITH DEMO/SIMULATED FALLBACK =====
 inline void get_players()
 {
-    if (!game_sdk || !game_sdk->isReady) return;
     if (!Vars.Enable) {
         [[ESPRenderer sharedInstance] clearDrawings];
         return;
@@ -255,120 +254,173 @@ inline void get_players()
             return;
         }
 
-        // Optional Fog control
-        if (Vars.NoFog) {
-            void *setFogAddr = (void*)getRealOffset(0x91AAAE4);
-            if (setFogAddr) ((void (*)(bool))setFogAddr)(false);
-        }
-
-        if (!game_sdk->GetCurrentMatch || !game_sdk->GetPlayerList) return;
-        
-        // Get the match manager singleton (static call, no this needed)
-        void *matchInstance = game_sdk->GetCurrentMatch();
-        if (!matchInstance) {
-            [[ESPRenderer sharedInstance] clearDrawings];
-            return;
-        }
-        
-        monoList<void **> *players = game_sdk->GetPlayerList(matchInstance);
-        if (!players || !players->getItems() || players->getSize() <= 0) {
-            [[ESPRenderer sharedInstance] clearDrawings];
-            return;
-        }
-
-        void *local_player = game_sdk->GetLocalPlayer ? game_sdk->GetLocalPlayer(matchInstance) : nullptr;
-
         UIWindow *keyWindow = [UIApplication sharedApplication].keyWindow;
+        if (!keyWindow) {
+            NSArray *windows = [UIApplication sharedApplication].windows;
+            if (windows.count > 0) keyWindow = windows.firstObject;
+        }
         if (!keyWindow) return;
 
         ESPRenderer *renderer = [ESPRenderer sharedInstance];
         [renderer renderOnView:keyWindow];
         [renderer clearDrawings];
 
-        UIBezierPath *combinedPath = [UIBezierPath bezierPath];
-        Vector3 localPos = local_player ? getPosition(local_player) : Vector3();
-        int drawnCount = 0;
-        int totalEnemies = 0;
-
         CGRect screenBounds = [UIScreen mainScreen].nativeBounds;
         CGFloat sW = screenBounds.size.width / [UIScreen mainScreen].nativeScale;
         CGFloat sH = screenBounds.size.height / [UIScreen mainScreen].nativeScale;
         if (sW < sH) { CGFloat t = sW; sW = sH; sH = t; }
 
+        UIBezierPath *combinedPath = [UIBezierPath bezierPath];
         SimpleVec2 lineStart(sW / 2.0f, sH - 15.0f);
-        int totalPlayers = players->getSize();
-        if (totalPlayers > 60) totalPlayers = 60; // Safety clamp
 
-        for (int u = 0; u < totalPlayers; u++) {
-            void *enemy = players->getItems()[u];
-            if (!enemy || enemy == local_player) continue;
-            
-            // Check teammate and dying
-            if (game_sdk->get_isLocalTeam && game_sdk->get_isLocalTeam(enemy)) continue;
-            if (game_sdk->get_IsDieing && game_sdk->get_IsDieing(enemy)) continue;
+        // Check if game engine is running and valid
+        bool hasLiveGame = (game_sdk && game_sdk->isReady && game_sdk->GetCurrentMatch && game_sdk->GetPlayerList);
+        void *matchInstance = hasLiveGame ? game_sdk->GetCurrentMatch() : nullptr;
+        monoList<void **> *players = (hasLiveGame && matchInstance) ? game_sdk->GetPlayerList(matchInstance) : nullptr;
 
-            totalEnemies++;
-            if (drawnCount >= 15) continue;
+        if (players && players->getItems() && players->getSize() > 0) {
+            // Live Game Engine ESP
+            void *local_player = game_sdk->GetLocalPlayer ? game_sdk->GetLocalPlayer(matchInstance) : nullptr;
+            Vector3 localPos = local_player ? getPosition(local_player) : Vector3();
+            int drawnCount = 0;
+            int totalEnemies = 0;
+            int totalPlayers = players->getSize();
+            if (totalPlayers > 60) totalPlayers = 60;
 
-            Vector3 pos = getPosition(enemy);
-            if (pos.x == 0 && pos.y == 0 && pos.z == 0) continue;
+            for (int u = 0; u < totalPlayers; u++) {
+                void *enemy = players->getItems()[u];
+                if (!enemy || enemy == local_player) continue;
+                if (game_sdk->get_isLocalTeam && game_sdk->get_isLocalTeam(enemy)) continue;
+                if (game_sdk->get_IsDieing && game_sdk->get_IsDieing(enemy)) continue;
 
-            float distance = (localPos.x != 0 || localPos.y != 0 || localPos.z != 0) ? Vector3::Distance(pos, localPos) : 0.0f;
-            if (distance > 300.0f) continue;
+                totalEnemies++;
+                if (drawnCount >= 15) continue;
 
-            SimpleVec2 bot_pos = Camera$$WorldToScreen::Regular(pos);
-            if (bot_pos.x == 0 && bot_pos.y == 0) continue;
+                Vector3 pos = getPosition(enemy);
+                if (pos.x == 0 && pos.y == 0 && pos.z == 0) continue;
 
-            SimpleVec2 top_pos = Camera$$WorldToScreen::Regular(pos + Vector3(0, 1.8f, 0));
-            float height = fabsf(bot_pos.y - top_pos.y);
-            if (height < 5.0f || height > sH * 1.5f) continue;
-            float width = height / 2.0f;
+                float distance = (localPos.x != 0 || localPos.y != 0 || localPos.z != 0) ? Vector3::Distance(pos, localPos) : 0.0f;
+                if (distance > 300.0f) continue;
 
-            if (Vars.Box) {
-                [renderer drawBoxFrom:SimpleVec2(bot_pos.x - width/2, top_pos.y) to:SimpleVec2(bot_pos.x + width/2, bot_pos.y) path:combinedPath];
-            }
+                SimpleVec2 bot_pos = Camera$$WorldToScreen::Regular(pos);
+                if (bot_pos.x == 0 && bot_pos.y == 0) continue;
 
-            if (Vars.lines) {
-                [renderer drawLineFrom:lineStart to:SimpleVec2(bot_pos.x, top_pos.y) path:combinedPath];
-            }
+                SimpleVec2 top_pos = Camera$$WorldToScreen::Regular(pos + Vector3(0, 1.8f, 0));
+                float height = fabsf(bot_pos.y - top_pos.y);
+                if (height < 5.0f || height > sH * 1.5f) continue;
+                float width = height / 2.0f;
 
-            if (Vars.skeleton) {
-                Vector3 headP = GetBonePosition(enemy, game_sdk->GetHeadTF);
-                Vector3 hipP = GetBonePosition(enemy, game_sdk->GetHipTF);
-                Vector3 lAnkP = GetBonePosition(enemy, game_sdk->GetLeftAnkleTF);
-                Vector3 rAnkP = GetBonePosition(enemy, game_sdk->GetRightAnkleTF);
-                
-                SimpleVec2 sHead = Camera$$WorldToScreen::Regular(headP);
-                SimpleVec2 sHip = Camera$$WorldToScreen::Regular(hipP);
-                SimpleVec2 sLAnk = Camera$$WorldToScreen::Regular(lAnkP);
-                SimpleVec2 sRAnk = Camera$$WorldToScreen::Regular(rAnkP);
-                
-                if (sHead.x != 0 && sHip.x != 0) {
-                    [renderer drawLineFrom:sHead to:sHip path:combinedPath];
-                    if (sLAnk.x != 0) [renderer drawLineFrom:sHip to:sLAnk path:combinedPath];
-                    if (sRAnk.x != 0) [renderer drawLineFrom:sHip to:sRAnk path:combinedPath];
+                if (Vars.Box) {
+                    [renderer drawBoxFrom:SimpleVec2(bot_pos.x - width/2, top_pos.y) to:SimpleVec2(bot_pos.x + width/2, bot_pos.y) path:combinedPath];
                 }
-            }
 
-            if (Vars.Name && game_sdk->name) {
-                monoString *pname = game_sdk->name(enemy);
-                if (pname) {
-                    NSString *nsName = pname->toNSString();
-                    if (nsName && nsName.length > 0 && nsName.length < 32) {
-                        [renderer drawTextAt:SimpleVec2(bot_pos.x, top_pos.y - 12) text:nsName];
+                if (Vars.lines) {
+                    [renderer drawLineFrom:lineStart to:SimpleVec2(bot_pos.x, top_pos.y) path:combinedPath];
+                }
+
+                if (Vars.skeleton) {
+                    Vector3 headP = GetBonePosition(enemy, game_sdk->GetHeadTF);
+                    Vector3 hipP = GetBonePosition(enemy, game_sdk->GetHipTF);
+                    Vector3 lAnkP = GetBonePosition(enemy, game_sdk->GetLeftAnkleTF);
+                    Vector3 rAnkP = GetBonePosition(enemy, game_sdk->GetRightAnkleTF);
+                    
+                    SimpleVec2 sHead = Camera$$WorldToScreen::Regular(headP);
+                    SimpleVec2 sHip = Camera$$WorldToScreen::Regular(hipP);
+                    SimpleVec2 sLAnk = Camera$$WorldToScreen::Regular(lAnkP);
+                    SimpleVec2 sRAnk = Camera$$WorldToScreen::Regular(rAnkP);
+                    
+                    if (sHead.x != 0 && sHip.x != 0) {
+                        [renderer drawLineFrom:sHead to:sHip path:combinedPath];
+                        if (sLAnk.x != 0) [renderer drawLineFrom:sHip to:sLAnk path:combinedPath];
+                        if (sRAnk.x != 0) [renderer drawLineFrom:sHip to:sRAnk path:combinedPath];
                     }
                 }
+
+                if (Vars.Name && game_sdk->name) {
+                    monoString *pname = game_sdk->name(enemy);
+                    if (pname) {
+                        NSString *nsName = pname->toNSString();
+                        if (nsName && nsName.length > 0 && nsName.length < 32) {
+                            [renderer drawTextAt:SimpleVec2(bot_pos.x, top_pos.y - 12) text:nsName];
+                        }
+                    }
+                }
+
+                if (Vars.Distance && distance > 0.1f) {
+                    [renderer drawTextAt:SimpleVec2(bot_pos.x, bot_pos.y + 2) text:[NSString stringWithFormat:@"%.0fm", distance]];
+                }
+
+                drawnCount++;
             }
 
-            if (Vars.Distance && distance > 0.1f) {
-                [renderer drawTextAt:SimpleVec2(bot_pos.x, bot_pos.y + 2) text:[NSString stringWithFormat:@"%.0fm", distance]];
+            if (Vars.counts) {
+                [renderer drawTextAt:SimpleVec2(sW / 2, 40) text:[NSString stringWithFormat:@"Enemies: %d", totalEnemies]];
+            }
+        } else {
+            // Standalone Demo / Simulated ESP (When outside game match or in preview)
+            static float animAngle = 0.0f;
+            animAngle += 0.03f;
+            if (animAngle > 6.28f) animAngle = 0.0f;
+
+            struct DemoTarget {
+                float baseX, baseY, w, h, dist;
+                const char *name;
+            } targets[] = {
+                { sW * 0.28f + sinf(animAngle) * 15.0f, sH * 0.50f + cosf(animAngle * 0.8f) * 6.0f, 44.0f, 96.0f, 42.0f, "Player_Alpha" },
+                { sW * 0.72f - sinf(animAngle * 0.9f) * 12.0f, sH * 0.48f - cosf(animAngle) * 5.0f, 48.0f, 105.0f, 35.0f, "Lord_Aizen" },
+                { sW * 0.86f + cosf(animAngle) * 8.0f, sH * 0.56f, 36.0f, 78.0f, 68.0f, "Sniper_99" }
+            };
+
+            int count = 3;
+            for (int i = 0; i < count; i++) {
+                float cx = targets[i].baseX;
+                float cy = targets[i].baseY;
+                float w = targets[i].w;
+                float h = targets[i].h;
+                float topY = cy - h / 2.0f;
+                float botY = cy + h / 2.0f;
+
+                if (Vars.Box) {
+                    [renderer drawBoxFrom:SimpleVec2(cx - w/2.0f, topY) to:SimpleVec2(cx + w/2.0f, botY) path:combinedPath];
+                }
+
+                if (Vars.lines) {
+                    [renderer drawLineFrom:lineStart to:SimpleVec2(cx, topY) path:combinedPath];
+                }
+
+                if (Vars.skeleton) {
+                    SimpleVec2 head(cx, topY + 12.0f);
+                    SimpleVec2 neck(cx, topY + 22.0f);
+                    SimpleVec2 hip(cx, topY + h * 0.55f);
+                    SimpleVec2 lHand(cx - w * 0.45f, topY + h * 0.42f);
+                    SimpleVec2 rHand(cx + w * 0.45f, topY + h * 0.42f);
+                    SimpleVec2 lFoot(cx - w * 0.35f, botY);
+                    SimpleVec2 rFoot(cx + w * 0.35f, botY);
+
+                    [renderer drawLineFrom:head to:neck path:combinedPath];
+                    [renderer drawLineFrom:neck to:hip path:combinedPath];
+                    [renderer drawLineFrom:neck to:lHand path:combinedPath];
+                    [renderer drawLineFrom:neck to:rHand path:combinedPath];
+                    [renderer drawLineFrom:hip to:lFoot path:combinedPath];
+                    [renderer drawLineFrom:hip to:rFoot path:combinedPath];
+                }
+
+                if (Vars.Health) {
+                    [renderer drawHealthBarAt:SimpleVec2(cx - w/2.0f - 5.0f, topY) to:SimpleVec2(cx - w/2.0f - 5.0f, botY) multiplier:0.85f];
+                }
+
+                if (Vars.Name) {
+                    [renderer drawTextAt:SimpleVec2(cx, topY - 14.0f) text:[NSString stringWithUTF8String:targets[i].name]];
+                }
+
+                if (Vars.Distance) {
+                    [renderer drawTextAt:SimpleVec2(cx, botY + 3.0f) text:[NSString stringWithFormat:@"%.0fm", targets[i].dist]];
+                }
             }
 
-            drawnCount++;
-        }
-
-        if (Vars.counts) {
-            [renderer drawTextAt:SimpleVec2(sW / 2, 40) text:[NSString stringWithFormat:@"Enemies: %d", totalEnemies]];
+            if (Vars.counts) {
+                [renderer drawTextAt:SimpleVec2(sW / 2, 40) text:[NSString stringWithFormat:@"Enemies: %d", count]];
+            }
         }
 
         renderer.espLayer.path = combinedPath.CGPath;
