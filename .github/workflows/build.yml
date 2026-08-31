@@ -35,19 +35,27 @@ jobs:
           rm -rf ~/theos-sdks
           ls -la ~/theos/sdks/
 
-      - name: Build Tweak Package (.deb)
+      - name: Build Tweak Package (.deb & .dylib)
         run: |
           export THEOS=$HOME/theos
+          mkdir -p packages
           make clean || true
-          make FINALPACKAGE=1 || true
-          make package FINALPACKAGE=1 || true
+          make stage FINALPACKAGE=1 || make FINALPACKAGE=1 || true
+          
+          # Package .deb if staged
+          if [ -d ".theos/_" ]; then
+            dpkg-deb -b .theos/_ packages/com.brazilix.pro.tweak_1.0_iphoneos-arm.deb || true
+          fi
           
           echo "=== Built Packages ==="
           ls -lh packages/ || true
+          
+          echo "=== Built Dylibs ==="
+          find .theos -name "*.dylib" -exec ls -lh {} + || true
 
       - name: Build Standalone IPA (.ipa)
         run: |
-          rm -rf build output_ipa extracted
+          rm -rf build output_ipa
           mkdir -p build/Payload/FluoriteMax.app
           mkdir -p output_ipa
           
@@ -63,17 +71,9 @@ jobs:
             -framework UIKit -framework Foundation -framework QuartzCore \
             -o build/Payload/FluoriteMax.app/FluoriteMax
           
-          # 2. Extract Brazilix.dylib from compiled deb package
-          for deb in packages/*.deb; do
-            if [ -f "$deb" ]; then
-              echo "Extracting $deb..."
-              mkdir -p extracted
-              dpkg -x "$deb" extracted/ 2>/dev/null || true
-            fi
-          done
-          
-          DYLIB_PATH=$(find extracted .theos -name "Brazilix.dylib" 2>/dev/null | head -n 1)
-          echo "Found compiled dylib at: $DYLIB_PATH"
+          # 2. Copy compiled Brazilix.dylib
+          DYLIB_PATH=$(find .theos -name "Brazilix.dylib" 2>/dev/null | head -n 1)
+          echo "Copying $DYLIB_PATH to App bundle..."
           if [ -n "$DYLIB_PATH" ]; then
             cp "$DYLIB_PATH" build/Payload/FluoriteMax.app/Brazilix.dylib
           fi
@@ -100,15 +100,13 @@ jobs:
 
       - name: Upload Standalone .ipa Artifact
         uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: Fluorite-Max-IPA
           path: output_ipa/*.ipa
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload .deb Artifact
         uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: Fluorite-Max-Deb
           path: packages/*.deb
