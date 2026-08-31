@@ -24,6 +24,7 @@ jobs:
 
       - name: Build Standalone IPA (.ipa)
         run: |
+          set -x
           SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path)
           echo "Using SDK at: $SDKPATH"
           
@@ -32,11 +33,12 @@ jobs:
           mkdir -p build/Payload/FluoriteMax.app
           mkdir -p output_ipa
           
-          # Compile standalone App executable with the exact Menu & ESP UI
+          # Compile standalone App executable with verbose flags
           clang++ -arch arm64 -isysroot "$SDKPATH" -miphoneos-version-min=14.0 \
-            -std=c++11 -fobjc-arc \
+            -std=c++17 -fobjc-arc -O2 \
+            -Wno-everything \
             -framework UIKit -framework Foundation -framework QuartzCore -framework CoreGraphics -framework AudioToolbox \
-            Source/Menu.mm Source/AntiCheatBypass.mm \
+            Source/Menu.mm \
             -o build/Payload/FluoriteMax.app/FluoriteMax
           
           # Create Info.plist

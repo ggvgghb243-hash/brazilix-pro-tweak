@@ -367,10 +367,12 @@ UIWindow *mainWindow;
 Vars_t Vars;
 game_sdk_t *game_sdk = new game_sdk_t();
 
-extern "C" void initAntiCheatBypass();
+extern "C" void initAntiCheatBypass() __attribute__((weak));
 
 + (void)load {
-    initAntiCheatBypass();
+    if (&initAntiCheatBypass != NULL) {
+        initAntiCheatBypass();
+    }
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [self initStandaloneUI];
     });
