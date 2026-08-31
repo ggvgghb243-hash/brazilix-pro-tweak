@@ -18,29 +18,9 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Build Dependencies
+      - name: Install Build Tools
         run: |
-          brew install ldid-procursus dpkg || true
-
-      - name: Setup Theos
-        run: |
-          git clone --recursive https://github.com/theos/theos.git ~/theos
-          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
-
-      - name: Setup iOS SDK
-        run: |
-          git clone --depth 1 --filter=blob:none --sparse https://github.com/theos/sdks.git ~/theos-sdks
-          cd ~/theos-sdks
-          git sparse-checkout set iPhoneOS16.5.sdk
-          cp -R iPhoneOS16.5.sdk ~/theos/sdks/
-          cd ..
-          rm -rf ~/theos-sdks
-
-      - name: Build Tweak Package (.deb)
-        run: |
-          export THEOS=$HOME/theos
-          make clean || true
-          make package FINALPACKAGE=1
+          brew install ldid dpkg || true
 
       - name: Build Standalone IPA (.ipa)
         run: |
@@ -55,7 +35,7 @@ jobs:
           clang++ -arch arm64 -isysroot $SDKPATH -miphoneos-version-min=14.0 \
             -std=c++11 -fobjc-arc \
             -framework UIKit -framework Foundation -framework QuartzCore -framework CoreGraphics -framework AudioToolbox \
-            Source/Menu.mm \
+            Source/Menu.mm Source/AntiCheatBypass.mm \
             -o build/Payload/FluoriteMax.app/FluoriteMax
           
           # Create Info.plist
@@ -96,8 +76,8 @@ jobs:
           </plist>
           EOF
           
-          # Sign binary with ldid
-          ldid -S build/Payload/FluoriteMax.app/FluoriteMax || codesign -s - --force build/Payload/FluoriteMax.app/FluoriteMax
+          # Ad-hoc sign binary
+          codesign -s - --force build/Payload/FluoriteMax.app/FluoriteMax || ldid -S build/Payload/FluoriteMax.app/FluoriteMax || true
           
           # Package IPA
           cd build
@@ -105,13 +85,25 @@ jobs:
           cd ..
           cp build/FluoriteMax.ipa output_ipa/FluoriteMax.ipa
 
-      - name: Upload .deb Artifact
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: Fluorite-Max-Deb
-          path: packages/*.deb
-          if-no-files-found: warn
+      - name: Setup Theos
+        run: |
+          git clone --recursive https://github.com/theos/theos.git ~/theos
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+
+      - name: Setup iOS SDK for Theos
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/theos/sdks.git ~/theos-sdks
+          cd ~/theos-sdks
+          git sparse-checkout set iPhoneOS16.5.sdk
+          cp -R iPhoneOS16.5.sdk ~/theos/sdks/
+          cd ..
+          rm -rf ~/theos-sdks
+
+      - name: Build Tweak Package (.deb)
+        run: |
+          export THEOS=$HOME/theos
+          make clean || true
+          make package FINALPACKAGE=1 || true
 
       - name: Upload Standalone .ipa Artifact
         uses: actions/upload-artifact@v4
@@ -119,4 +111,12 @@ jobs:
         with:
           name: Fluorite-Max-IPA
           path: output_ipa/*.ipa
+          if-no-files-found: warn
+
+      - name: Upload .deb Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Fluorite-Max-Deb
+          path: packages/*.deb
           if-no-files-found: warn

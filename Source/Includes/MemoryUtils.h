@@ -1,3 +1,4 @@
+#pragma once
 #if defined(__has_include)
   #if __has_include(<substrate.h>)
     #include <substrate.h>
@@ -19,25 +20,24 @@ extern "C" void MSHookFunction(void *symbol, void *replace, void **result) __att
 
 // thanks to shmoo for the usefull stuff under this comment.
 #define timer(sec) dispatch_after(dispatch_time(DISPATCH_TIME_NOW, sec * NSEC_PER_SEC), dispatch_get_main_queue(), ^
-#define HOOK(offset, ptr, orig) if (MSHookFunction) { MSHookFunction((void *)getRealOffset(offset), (void *)ptr, (void **)&orig); }
-#define HOOK_NO_ORIG(offset, ptr) if (MSHookFunction) { MSHookFunction((void *)getRealOffset(offset), (void *)ptr, NULL); }
+#define HOOK(offset, ptr, orig) if (&MSHookFunction != NULL) { MSHookFunction((void *)getRealOffset(offset), (void *)ptr, (void **)&orig); }
+#define HOOK_NO_ORIG(offset, ptr) if (&MSHookFunction != NULL) { MSHookFunction((void *)getRealOffset(offset), (void *)ptr, NULL); }
 
 // Note to not prepend an underscore to the symbol. See Notes on the Apple manpage (https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/dlsym.3.html)
-#define HOOKSYM(sym, ptr, org) if (MSHookFunction) { MSHookFunction((void*)dlsym((void *)RTLD_DEFAULT, sym), (void *)ptr, (void **)&org); }
-#define HOOKSYM_NO_ORIG(sym, ptr)  if (MSHookFunction) { MSHookFunction((void*)dlsym((void *)RTLD_DEFAULT, sym), (void *)ptr, NULL); }
+#define HOOKSYM(sym, ptr, org) if (&MSHookFunction != NULL) { MSHookFunction((void*)dlsym((void *)RTLD_DEFAULT, sym), (void *)ptr, (void **)&org); }
+#define HOOKSYM_NO_ORIG(sym, ptr)  if (&MSHookFunction != NULL) { MSHookFunction((void*)dlsym((void *)RTLD_DEFAULT, sym), (void *)ptr, NULL); }
 #define getSym(symName) dlsym((void *)RTLD_DEFAULT, symName)
 
 // Convert hex color to UIColor, usage: For the color #BD0000 you'd use: UIColorFromHex(0xBD0000)
 #define UIColorFromHex(hexColor) [UIColor colorWithRed:((float)((hexColor & 0xFF0000) >> 16))/255.0 green:((float)((hexColor & 0xFF00) >> 8))/255.0 blue:((float)(hexColor & 0xFF))/255.0 alpha:1.0]
 
-bool getType(unsigned int data) {
+inline bool getType(unsigned int data) {
     int a = data & 0xffff8000;
     int b = a + 0x00008000;
     int c = b & 0xffff7fff;
     return c;
 }
 
-//Patching for Unity section, I just copy and paste it from KittyMemory becasue I'm lazy :D
 struct MemoryFileInfo {
     uint32_t index;
     const struct mach_header *header;
@@ -45,8 +45,8 @@ struct MemoryFileInfo {
     long long address;
 };
 
-MemoryFileInfo getBaseInfo() {
-    MemoryFileInfo _info;
+inline MemoryFileInfo getBaseInfo() {
+    MemoryFileInfo _info = {0, NULL, NULL, 0};
     std::string applicationsPath = "/private/var/containers/Bundle/Application";
     for (uint32_t i = 0; i < _dyld_image_count(); i++)
     {
@@ -65,8 +65,8 @@ MemoryFileInfo getBaseInfo() {
     return _info;
 }
 
-MemoryFileInfo getMemoryFileInfo(const std::string& fileName) {
-    MemoryFileInfo _info;
+inline MemoryFileInfo getMemoryFileInfo(const std::string& fileName) {
+    MemoryFileInfo _info = {0, NULL, NULL, 0};
     const uint32_t imageCount = _dyld_image_count();
     for (uint32_t i = 0; i < imageCount; i++) {
         const char *name = _dyld_get_image_name(i);
@@ -84,7 +84,7 @@ MemoryFileInfo getMemoryFileInfo(const std::string& fileName) {
     return _info;
 }
 
-uintptr_t getAbsoluteAddress(const char *fileName, uintptr_t address) {
+inline uintptr_t getAbsoluteAddress(const char *fileName, uintptr_t address) {
     MemoryFileInfo info;
     if (fileName)
         info = getMemoryFileInfo(fileName);
@@ -95,17 +95,15 @@ uintptr_t getAbsoluteAddress(const char *fileName, uintptr_t address) {
     return info.address + address;
 }
 
-uint64_t getRealOffset(uint64_t offset){
+inline uint64_t getRealOffset(uint64_t offset){
     return getAbsoluteAddress("UnityFramework", offset);
 }
 
-uint64_t getRealOffsetNULL(uint64_t offset){
+inline uint64_t getRealOffsetNULL(uint64_t offset){
     return getAbsoluteAddress(NULL, offset);
 }
 
-//Well, at here I use vm_unity for the game that contains "UnityFramework.framework/UnityFramework" file, you can change it if needed, for example: LoL WildRift, FEProj is the correct binary for you.
-bool vm_unity(long long offset, unsigned int data) {
-    //Change binary name here if it not UnityFramework
+inline bool vm_unity(long long offset, unsigned int data) {
     const char *fileName = "UnityFramework";
     uintptr_t address = getAbsoluteAddress(fileName, offset);
     if (address == 0)
@@ -140,8 +138,7 @@ bool vm_unity(long long offset, unsigned int data) {
     return true;
 }
 
-bool vm(long long offset, unsigned int data) {
-    //Change binary name here if it not UnityFramework
+inline bool vm(long long offset, unsigned int data) {
     const char *fileName = NULL;
     uintptr_t address = getAbsoluteAddress(fileName, offset);
     if (address == 0)
@@ -176,9 +173,7 @@ bool vm(long long offset, unsigned int data) {
     return true;
 }
 
-
-bool vm_anogs(long long offset, unsigned int data) {
-    //Change binary name here if it not UnityFramework
+inline bool vm_anogs(long long offset, unsigned int data) {
     const char *fileName = "anogs";
     uintptr_t address = getAbsoluteAddress(fileName, offset);
     if (address == 0)
