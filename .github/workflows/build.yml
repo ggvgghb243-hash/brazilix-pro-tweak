@@ -38,19 +38,27 @@ jobs:
       - name: Build Tweak Package (.deb & .dylib)
         run: |
           export THEOS=$HOME/theos
-          mkdir -p packages
+          mkdir -p packages stage/DEBIAN stage/Library/MobileSubstrate/DynamicLibraries
           make clean || true
-          make stage FINALPACKAGE=1 || make FINALPACKAGE=1 || true
+          make all FINALPACKAGE=1 || true
           
-          if [ -d ".theos/_" ]; then
-            dpkg-deb -b .theos/_ packages/com.brazilix.pro.tweak_1.0_iphoneos-arm.deb || true
+          # Find Brazilix.dylib
+          DYLIB_PATH=$(find .theos -name "Brazilix.dylib" 2>/dev/null | head -n 1)
+          echo "Found compiled dylib at: $DYLIB_PATH"
+          
+          # Copy files into stage and package deb
+          cp control stage/DEBIAN/
+          if [ -n "$DYLIB_PATH" ]; then
+            cp "$DYLIB_PATH" stage/Library/MobileSubstrate/DynamicLibraries/Brazilix.dylib
+            cat << 'EOF' > stage/Library/MobileSubstrate/DynamicLibraries/Brazilix.plist
+          { Filter = { Bundles = ( "com.dts.freefireth", "com.dts.freefiremax" ); }; }
+          EOF
           fi
           
-          echo "=== Built Packages ==="
-          ls -lh packages/ || true
+          dpkg-deb -b stage packages/com.brazilix.pro.tweak_1.0_iphoneos-arm.deb
           
-          echo "=== Built Dylibs ==="
-          find .theos -name "*.dylib" -exec ls -lh {} + || true
+          echo "=== Built Packages ==="
+          ls -lh packages/
 
       - name: Build Standalone IPA (.ipa)
         run: |
@@ -59,7 +67,7 @@ jobs:
           mkdir -p output_ipa
           
           SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path 2>/dev/null || echo "$HOME/theos/sdks/iPhoneOS16.5.sdk")
-          echo "Compiling Loader Executable with SDK: $SDKPATH"
+          echo "Compiling Loader with SDK: $SDKPATH"
           
           # 1. Compile Loader Executable
           clang -target arm64-apple-ios14.0 \
@@ -71,8 +79,8 @@ jobs:
             -o build/Payload/FluoriteMax.app/FluoriteMax
           
           # 2. Copy compiled Brazilix.dylib
-          DYLIB_PATH=$(find .theos -name "Brazilix.dylib" 2>/dev/null | head -n 1)
-          echo "Found Brazilix.dylib at: $DYLIB_PATH"
+          DYLIB_PATH=$(find .theos stage -name "Brazilix.dylib" 2>/dev/null | head -n 1)
+          echo "Copying $DYLIB_PATH to App bundle..."
           if [ -n "$DYLIB_PATH" ]; then
             cp "$DYLIB_PATH" build/Payload/FluoriteMax.app/Brazilix.dylib
           fi
@@ -109,4 +117,4 @@ jobs:
         with:
           name: Fluorite-Max-Deb
           path: packages/*.deb
-          if-no-files-found: warn
+          if-no-files-found: error
