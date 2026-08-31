@@ -35,99 +35,53 @@ jobs:
           rm -rf ~/theos-sdks
           ls -la ~/theos/sdks/
 
-      - name: Build Tweak Package (.deb)
+      - name: Build Tweak & Standalone App via Theos
         run: |
           export THEOS=$HOME/theos
           make clean || true
+          make FINALPACKAGE=1
           make package FINALPACKAGE=1 || true
+          
+          # Show built files
           ls -la packages/ || true
+          find .theos/obj -type d -name "*.app" || true
 
-      - name: Build Standalone IPA (.ipa)
+      - name: Package Standalone IPA (.ipa)
         run: |
-          # Clean and setup directories
           rm -rf build output_ipa
-          mkdir -p build/Payload/FluoriteMax.app
+          mkdir -p build/Payload
           mkdir -p output_ipa
           
-          # Compile standalone App executable with xcrun SDK or Theos SDK
-          SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path 2>/dev/null || echo "$HOME/theos/sdks/iPhoneOS16.5.sdk")
-          echo "Using SDK at: $SDKPATH"
+          # Locate the compiled .app bundle
+          APP_PATH=$(find .theos -name "FluoriteMax.app" -type d | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            APP_PATH=$(find . -name "FluoriteMax.app" -type d | head -n 1)
+          fi
+          echo "Using compiled App at: $APP_PATH"
           
-          clang++ -target arm64-apple-ios14.0 \
-            -isysroot "$SDKPATH" \
-            -I$HOME/theos/include \
-            -miphoneos-version-min=14.0 \
-            -std=c++17 -fobjc-arc -O2 \
-            Source/Menu.mm \
-            -framework UIKit -framework Foundation -framework QuartzCore -framework CoreGraphics -framework AudioToolbox \
-            -o build/Payload/FluoriteMax.app/FluoriteMax || true
+          # Copy to Payload
+          cp -R "$APP_PATH" build/Payload/
           
-          # If direct compilation produced binary or copy dylib fallback
-          if [ ! -f build/Payload/FluoriteMax.app/FluoriteMax ]; then
-            echo "Packaging compiled dylib into app bundle..."
-            DYLIB_PATH=$(find .theos -name "*.dylib" 2>/dev/null | head -n 1)
-            if [ -n "$DYLIB_PATH" ]; then
-              cp "$DYLIB_PATH" build/Payload/FluoriteMax.app/FluoriteMax
-            else
-              # If no dylib found, create fallback binary placeholder
-              touch build/Payload/FluoriteMax.app/FluoriteMax
-            fi
+          # Sign binary with ldid
+          if [ -f build/Payload/FluoriteMax.app/FluoriteMax ]; then
+            ldid -S build/Payload/FluoriteMax.app/FluoriteMax 2>/dev/null || true
           fi
           
-          # Create Info.plist
-          cat << 'EOF' > build/Payload/FluoriteMax.app/Info.plist
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>CFBundleExecutable</key>
-              <string>FluoriteMax</string>
-              <key>CFBundleIdentifier</key>
-              <string>com.fluoritemax.app</string>
-              <key>CFBundleName</key>
-              <string>Fluorite Max</string>
-              <key>CFBundleDisplayName</key>
-              <string>Fluorite Max</string>
-              <key>CFBundlePackageType</key>
-              <string>APPL</string>
-              <key>CFBundleShortVersionString</key>
-              <string>1.0</string>
-              <key>CFBundleVersion</key>
-              <string>1.0</string>
-              <key>LSRequiresIPhoneOS</key>
-              <true/>
-              <key>UIRequiresFullScreen</key>
-              <true/>
-              <key>UISupportedInterfaceOrientations</key>
-              <array>
-                  <string>UIInterfaceOrientationLandscapeLeft</string>
-                  <string>UIInterfaceOrientationLandscapeRight</string>
-              </array>
-              <key>UISupportedInterfaceOrientations~ipad</key>
-              <array>
-                  <string>UIInterfaceOrientationLandscapeLeft</string>
-                  <string>UIInterfaceOrientationLandscapeRight</string>
-              </array>
-          </dict>
-          </plist>
-          EOF
-          
-          # Sign binary with ldid or codesign
-          ldid -S build/Payload/FluoriteMax.app/FluoriteMax 2>/dev/null || codesign -s - --force build/Payload/FluoriteMax.app/FluoriteMax 2>/dev/null || true
-          
-          # Package IPA
+          # Package valid IPA
           cd build
           zip -qr FluoriteMax.ipa Payload
           cd ..
           cp build/FluoriteMax.ipa output_ipa/FluoriteMax.ipa
-          ls -la output_ipa/
+          
+          # Verify IPA size and content
+          ls -lh output_ipa/FluoriteMax.ipa
 
       - name: Upload Standalone .ipa Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Fluorite-Max-IPA
           path: output_ipa/*.ipa
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload .deb Artifact
         uses: actions/upload-artifact@v4
