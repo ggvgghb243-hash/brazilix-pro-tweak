@@ -12,7 +12,7 @@ TWEAK_NAME = Brazilix
 
 $(TWEAK_NAME)_FRAMEWORKS = UIKit Foundation QuartzCore CoreGraphics AudioToolbox
 
-$(TWEAK_NAME)_CCFLAGS = -std=c++11 -fno-rtti -fno-exceptions -DNDEBUG -DTWEAK_COMPILATION
+$(TWEAK_NAME)_CCFLAGS = -std=c++17 -fno-rtti -fno-exceptions -DNDEBUG -DTWEAK_COMPILATION
 $(TWEAK_NAME)_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-unused-variable -Wno-unused-value -DTWEAK_COMPILATION
 
 $(TWEAK_NAME)_FILES = Source/Menu.mm Source/AntiCheatBypass.mm
