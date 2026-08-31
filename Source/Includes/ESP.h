@@ -29,7 +29,8 @@ struct Vars_t
     bool skeleton = false;
     bool counts = false;
     bool NoFog = false;
-} Vars;
+};
+extern Vars_t Vars;
 
 // ===== GAME SDK =====
 class game_sdk_t

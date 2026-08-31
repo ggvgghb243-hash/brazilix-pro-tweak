@@ -364,6 +364,7 @@
 static BrazilixMenu *extraInfo;
 static BOOL MenDeal = NO;
 UIWindow *mainWindow;
+Vars_t Vars;
 game_sdk_t *game_sdk = new game_sdk_t();
 
 extern "C" void initAntiCheatBypass();
