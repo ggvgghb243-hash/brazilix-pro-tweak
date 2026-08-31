@@ -1265,11 +1265,4 @@ void game_sdk_t::init()
 }
 @end
 
-#ifndef TWEAK_COMPILATION
-int main(int argc, char * argv[]) {
-    @autoreleasepool {
-        return UIApplicationMain(argc, argv, nil, NSStringFromClass([StandaloneAppDelegate class]));
-    }
-}
-#endif
 

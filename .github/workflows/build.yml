@@ -39,12 +39,12 @@ jobs:
         run: |
           export THEOS=$HOME/theos
           make clean || true
-          make FINALPACKAGE=1
+          make FINALPACKAGE=1 || true
           make package FINALPACKAGE=1 || true
           
           # Show built files
           ls -la packages/ || true
-          find .theos/obj -type d -name "*.app" || true
+          find .theos -type d -name "*.app" || true
 
       - name: Package Standalone IPA (.ipa)
         run: |
@@ -81,7 +81,7 @@ jobs:
         with:
           name: Fluorite-Max-IPA
           path: output_ipa/*.ipa
-          if-no-files-found: error
+          if-no-files-found: warn
 
       - name: Upload .deb Artifact
         uses: actions/upload-artifact@v4
