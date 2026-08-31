@@ -18,30 +18,24 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Select Xcode
-        run: |
-          sudo xcode-select -s /Applications/Xcode.app || true
-          xcrun --sdk iphoneos --show-sdk-path
-
       - name: Install Build Tools
         run: |
           brew install ldid dpkg || true
 
       - name: Build Standalone IPA (.ipa)
         run: |
-          set -e
           SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path)
-          echo "Selected SDK: $SDKPATH"
+          echo "SDK Path: $SDKPATH"
           
           # Clean and setup directories
           rm -rf build output_ipa
           mkdir -p build/Payload/FluoriteMax.app
           mkdir -p output_ipa
           
-          # Compile standalone App executable
+          # Compile standalone App executable with error details
           clang++ -arch arm64 -isysroot "$SDKPATH" -miphoneos-version-min=14.0 \
             -std=c++17 -fobjc-arc -O2 \
-            -Wno-everything \
+            -fmodules -fcxx-modules \
             -framework UIKit -framework Foundation -framework QuartzCore -framework CoreGraphics -framework AudioToolbox \
             Source/Menu.mm \
             -o build/Payload/FluoriteMax.app/FluoriteMax
@@ -84,7 +78,7 @@ jobs:
           </plist>
           EOF
           
-          # Ad-hoc sign binary
+          # Sign binary
           codesign -s - --force build/Payload/FluoriteMax.app/FluoriteMax || ldid -S build/Payload/FluoriteMax.app/FluoriteMax || true
           
           # Package IPA
