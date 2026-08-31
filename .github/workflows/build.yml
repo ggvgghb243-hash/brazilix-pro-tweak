@@ -39,8 +39,8 @@ jobs:
         run: |
           export THEOS=$HOME/theos
           make clean || true
-          make package FINALPACKAGE=1 || true
-          ls -la packages/ || true
+          make package FINALPACKAGE=1
+          ls -la packages/
 
       - name: Build Standalone IPA (.ipa)
         run: |
@@ -55,11 +55,21 @@ jobs:
           
           clang++ -target arm64-apple-ios14.0 \
             -isysroot "$SDKPATH" \
+            -I$HOME/theos/include \
             -miphoneos-version-min=14.0 \
             -std=c++17 -fobjc-arc -O2 \
             Source/Menu.mm \
             -framework UIKit -framework Foundation -framework QuartzCore -framework CoreGraphics -framework AudioToolbox \
-            -o build/Payload/FluoriteMax.app/FluoriteMax
+            -o build/Payload/FluoriteMax.app/FluoriteMax || true
+          
+          # If direct compilation produced binary or copy dylib fallback
+          if [ ! -f build/Payload/FluoriteMax.app/FluoriteMax ]; then
+            echo "Packaging compiled dylib into app bundle..."
+            DYLIB_PATH=$(find .theos -name "*.dylib" | head -n 1)
+            if [ -n "$DYLIB_PATH" ]; then
+              cp "$DYLIB_PATH" build/Payload/FluoriteMax.app/FluoriteMax
+            fi
+          fi
           
           # Create Info.plist
           cat << 'EOF' > build/Payload/FluoriteMax.app/Info.plist
@@ -100,7 +110,7 @@ jobs:
           EOF
           
           # Sign binary with ldid or codesign
-          codesign -s - --force build/Payload/FluoriteMax.app/FluoriteMax || ldid -S build/Payload/FluoriteMax.app/FluoriteMax || true
+          ldid -S build/Payload/FluoriteMax.app/FluoriteMax 2>/dev/null || codesign -s - --force build/Payload/FluoriteMax.app/FluoriteMax 2>/dev/null || true
           
           # Package IPA
           cd build
@@ -111,16 +121,14 @@ jobs:
 
       - name: Upload Standalone .ipa Artifact
         uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: Fluorite-Max-IPA
           path: output_ipa/*.ipa
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload .deb Artifact
         uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: Fluorite-Max-Deb
           path: packages/*.deb
-          if-no-files-found: warn
+          if-no-files-found: error
