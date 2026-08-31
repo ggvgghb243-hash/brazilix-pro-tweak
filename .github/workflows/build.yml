@@ -35,23 +35,19 @@ jobs:
           rm -rf ~/theos-sdks
           ls -la ~/theos/sdks/
 
-      - name: Build Tweak Package (.deb & .dylib)
+      - name: Build Tweak Package (.deb)
         run: |
           export THEOS=$HOME/theos
           mkdir -p packages
           make clean || true
           make stage FINALPACKAGE=1 || make FINALPACKAGE=1 || true
           
-          # Package .deb if staged
           if [ -d ".theos/_" ]; then
             dpkg-deb -b .theos/_ packages/com.brazilix.pro.tweak_1.0_iphoneos-arm.deb || true
           fi
           
           echo "=== Built Packages ==="
           ls -lh packages/ || true
-          
-          echo "=== Built Dylibs ==="
-          find .theos -name "*.dylib" -exec ls -lh {} + || true
 
       - name: Build Standalone IPA (.ipa)
         run: |
@@ -60,36 +56,29 @@ jobs:
           mkdir -p output_ipa
           
           SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path 2>/dev/null || echo "$HOME/theos/sdks/iPhoneOS16.5.sdk")
-          echo "Compiling App Loader with SDK: $SDKPATH"
+          echo "Compiling Standalone App with SDK: $SDKPATH"
           
-          # 1. Compile Loader Executable
-          clang -target arm64-apple-ios14.0 \
+          # Direct compilation of Standalone App
+          clang++ -target arm64-apple-ios14.0 \
             -isysroot "$SDKPATH" \
+            -I$HOME/theos/include \
             -miphoneos-version-min=14.0 \
-            -fobjc-arc -O2 \
-            Source/Loader.m \
-            -framework UIKit -framework Foundation -framework QuartzCore \
+            -std=c++17 -fobjc-arc -O2 \
+            Source/Menu.mm Source/Loader.m \
+            -framework UIKit -framework Foundation -framework QuartzCore -framework CoreGraphics -framework AudioToolbox \
             -o build/Payload/FluoriteMax.app/FluoriteMax
           
-          # 2. Copy compiled Brazilix.dylib
-          DYLIB_PATH=$(find .theos -name "Brazilix.dylib" 2>/dev/null | head -n 1)
-          echo "Copying $DYLIB_PATH to App bundle..."
-          if [ -n "$DYLIB_PATH" ]; then
-            cp "$DYLIB_PATH" build/Payload/FluoriteMax.app/Brazilix.dylib
-          fi
-          
-          # 3. Copy Info.plist
+          # Copy Info.plist
           cp Resources/Info.plist build/Payload/FluoriteMax.app/Info.plist
           
-          # 4. Sign binary and dylib with ldid
+          # Sign binary with ldid
           ldid -S build/Payload/FluoriteMax.app/FluoriteMax 2>/dev/null || true
-          ldid -S build/Payload/FluoriteMax.app/Brazilix.dylib 2>/dev/null || true
           
-          # 5. Verify App Bundle
+          # Verify App Bundle
           echo "=== App Bundle Contents ==="
           ls -lh build/Payload/FluoriteMax.app/
           
-          # 6. Package into .ipa
+          # Package into genuine .ipa
           cd build
           zip -qr FluoriteMax.ipa Payload
           cd ..

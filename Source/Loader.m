@@ -1,5 +1,10 @@
 #import <UIKit/UIKit.h>
-#import <dlfcn.h>
+
+@interface BrazilixMenu : NSObject
+- (void)setupDisplayLink;
+- (void)initTapGes;
+- (void)openMenu;
+@end
 
 @interface FluoriteAppDelegate : UIResponder <UIApplicationDelegate>
 @property (strong, nonatomic) UIWindow *window;
@@ -31,35 +36,12 @@
     subLabel.textAlignment = NSTextAlignmentCenter;
     [rootVC.view addSubview:subLabel];
     
-    // Load Brazilix tweak dylib
-    NSString *bundlePath = [[NSBundle mainBundle] bundlePath];
-    NSString *dylibPath = [bundlePath stringByAppendingPathComponent:@"Brazilix.dylib"];
-    
-    void *handle = dlopen([dylibPath UTF8String], RTLD_NOW | RTLD_GLOBAL);
-    if (!handle) {
-        NSLog(@"[FluoriteMax] dlopen error: %s", dlerror());
-    } else {
-        NSLog(@"[FluoriteMax] Loaded Brazilix.dylib successfully");
-    }
-    
     // Trigger Menu Initialization
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        Class menuClass = NSClassFromString(@"BrazilixMenu");
-        if (menuClass) {
-            id menu = [menuClass new];
-            #pragma clang diagnostic push
-            #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-            if ([menu respondsToSelector:NSSelectorFromString(@"setupDisplayLink")]) {
-                [menu performSelector:NSSelectorFromString(@"setupDisplayLink")];
-            }
-            if ([menu respondsToSelector:NSSelectorFromString(@"initTapGes")]) {
-                [menu performSelector:NSSelectorFromString(@"initTapGes")];
-            }
-            if ([menu respondsToSelector:NSSelectorFromString(@"openMenu")]) {
-                [menu performSelector:NSSelectorFromString(@"openMenu")];
-            }
-            #pragma clang diagnostic pop
-        }
+        BrazilixMenu *menu = [BrazilixMenu new];
+        [menu setupDisplayLink];
+        [menu initTapGes];
+        [menu openMenu];
     });
     
     return YES;
