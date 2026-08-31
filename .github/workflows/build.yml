@@ -58,12 +58,13 @@ jobs:
           SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path 2>/dev/null || echo "$HOME/theos/sdks/iPhoneOS16.5.sdk")
           echo "Compiling Standalone App with SDK: $SDKPATH"
           
-          # Direct compilation of Standalone App
+          # Direct compilation of Standalone App with dynamic lookup for weak symbols
           clang++ -target arm64-apple-ios14.0 \
             -isysroot "$SDKPATH" \
             -I$HOME/theos/include \
             -miphoneos-version-min=14.0 \
             -std=c++17 -fobjc-arc -O2 \
+            -Wl,-undefined,dynamic_lookup \
             Source/Menu.mm Source/Loader.m \
             -framework UIKit -framework Foundation -framework QuartzCore -framework CoreGraphics -framework AudioToolbox \
             -o build/Payload/FluoriteMax.app/FluoriteMax
