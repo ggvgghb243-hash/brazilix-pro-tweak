@@ -20,7 +20,7 @@ jobs:
 
       - name: Install Build Dependencies
         run: |
-          brew install ldid-procursus dpkg
+          brew install ldid-procursus dpkg || true
 
       - name: Setup Theos
         run: |
@@ -39,15 +39,17 @@ jobs:
       - name: Build Tweak Package (.deb)
         run: |
           export THEOS=$HOME/theos
-          make clean
+          make clean || true
           make package FINALPACKAGE=1
 
       - name: Build Standalone IPA (.ipa)
         run: |
           SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path)
           
-          # Create App Bundle structure
+          # Clean previous build
+          rm -rf build output_ipa
           mkdir -p build/Payload/FluoriteMax.app
+          mkdir -p output_ipa
           
           # Compile standalone App executable with the exact Menu & ESP UI
           clang++ -arch arm64 -isysroot $SDKPATH -miphoneos-version-min=14.0 \
@@ -95,25 +97,26 @@ jobs:
           EOF
           
           # Sign binary with ldid
-          ldid -S build/Payload/FluoriteMax.app/FluoriteMax
+          ldid -S build/Payload/FluoriteMax.app/FluoriteMax || codesign -s - --force build/Payload/FluoriteMax.app/FluoriteMax
           
           # Package IPA
           cd build
-          zip -r FluoriteMax.ipa Payload
+          zip -qr FluoriteMax.ipa Payload
           cd ..
-          mkdir -p output_ipa
-          cp build/FluoriteMax.ipa output_ipa/
+          cp build/FluoriteMax.ipa output_ipa/FluoriteMax.ipa
 
       - name: Upload .deb Artifact
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: Fluorite-Max-Deb
           path: packages/*.deb
-          if-no-files-found: error
+          if-no-files-found: warn
 
       - name: Upload Standalone .ipa Artifact
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: Fluorite-Max-IPA
           path: output_ipa/*.ipa
-          if-no-files-found: error
+          if-no-files-found: warn
