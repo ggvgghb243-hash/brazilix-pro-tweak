@@ -1,5 +1,10 @@
 #import <UIKit/UIKit.h>
-#import <dlfcn.h>
+
+@interface BrazilixMenu : NSObject
+- (void)setupDisplayLink;
+- (void)initTapGes;
+- (void)openMenu;
+@end
 
 @interface FluoriteAppDelegate : UIResponder <UIApplicationDelegate>
 @property (strong, nonatomic) UIWindow *window;
@@ -31,35 +36,12 @@
     subLabel.textAlignment = NSTextAlignmentCenter;
     [rootVC.view addSubview:subLabel];
     
-    // Dynamically load Brazilix.dylib
-    NSString *bundlePath = [[NSBundle mainBundle] bundlePath];
-    NSString *dylibPath = [bundlePath stringByAppendingPathComponent:@"Brazilix.dylib"];
-    
-    void *handle = dlopen([dylibPath UTF8String], RTLD_NOW | RTLD_GLOBAL);
-    if (!handle) {
-        NSLog(@"[FluoriteMax] dlopen failed: %s", dlerror());
-    } else {
-        NSLog(@"[FluoriteMax] Brazilix.dylib loaded successfully!");
-    }
-    
-    // Auto launch menu
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.4 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        Class menuClass = NSClassFromString(@"BrazilixMenu");
-        if (menuClass) {
-            id menu = [menuClass new];
-            #pragma clang diagnostic push
-            #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-            if ([menu respondsToSelector:NSSelectorFromString(@"setupDisplayLink")]) {
-                [menu performSelector:NSSelectorFromString(@"setupDisplayLink")];
-            }
-            if ([menu respondsToSelector:NSSelectorFromString(@"initTapGes")]) {
-                [menu performSelector:NSSelectorFromString(@"initTapGes")];
-            }
-            if ([menu respondsToSelector:NSSelectorFromString(@"openMenu")]) {
-                [menu performSelector:NSSelectorFromString(@"openMenu")];
-            }
-            #pragma clang diagnostic pop
-        }
+    // Initialize Fluorite Max Menu directly
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        BrazilixMenu *menu = [BrazilixMenu new];
+        [menu setupDisplayLink];
+        [menu initTapGes];
+        [menu openMenu];
     });
     
     return YES;
