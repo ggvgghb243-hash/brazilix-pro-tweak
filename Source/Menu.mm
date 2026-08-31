@@ -1223,46 +1223,5 @@ void game_sdk_t::init()
     this->isReady = true;
 }
 
-// ===== STANDALONE APP DELEGATE FOR IPA EXECUTION =====
-@interface StandaloneAppDelegate : UIResponder <UIApplicationDelegate>
-@property (strong, nonatomic) UIWindow *window;
-@end
-
-@implementation StandaloneAppDelegate
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-    self.window.backgroundColor = [UIColor colorWithRed:8.0/255.0 green:10.0/255.0 blue:16.0/255.0 alpha:1.0];
-    
-    UIViewController *rootVC = [[UIViewController alloc] init];
-    rootVC.view.backgroundColor = [UIColor clearColor];
-    self.window.rootViewController = rootVC;
-    [self.window makeKeyAndVisible];
-    
-    // Background demo wallpaper/game scene simulation
-    UILabel *bgLabel = [[UILabel alloc] initWithFrame:self.window.bounds];
-    bgLabel.text = @"Fluorite Max • Standalone Engine";
-    bgLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightMedium];
-    bgLabel.textColor = [UIColor colorWithWhite:1.0 alpha:0.15];
-    bgLabel.textAlignment = NSTextAlignmentCenter;
-    [rootVC.view addSubview:bgLabel];
-    
-    UILabel *hintLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, self.window.bounds.size.height - 40, self.window.bounds.size.width, 30)];
-    hintLabel.text = @"Tap with 2 fingers to Toggle Menu • Drag to Move";
-    hintLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
-    hintLabel.textColor = [UIColor colorWithWhite:1.0 alpha:0.35];
-    hintLabel.textAlignment = NSTextAlignmentCenter;
-    [rootVC.view addSubview:hintLabel];
-    
-    mainWindow = self.window;
-    
-    // Automatically initialize and display Menu
-    BrazilixMenu *menu = [BrazilixMenu new];
-    [menu setupDisplayLink];
-    [menu initTapGes];
-    [menu openMenu];
-    
-    return YES;
-}
-@end
 
 

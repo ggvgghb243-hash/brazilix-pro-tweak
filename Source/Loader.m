@@ -1,10 +1,5 @@
 #import <UIKit/UIKit.h>
-
-@interface BrazilixMenu : NSObject
-- (void)setupDisplayLink;
-- (void)initTapGes;
-- (void)openMenu;
-@end
+#import <dlfcn.h>
 
 @interface FluoriteAppDelegate : UIResponder <UIApplicationDelegate>
 @property (strong, nonatomic) UIWindow *window;
@@ -21,7 +16,7 @@
     self.window.rootViewController = rootVC;
     [self.window makeKeyAndVisible];
     
-    // Background branding & guidance
+    // Background guidance
     UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, self.window.bounds.size.height * 0.35, self.window.bounds.size.width, 40)];
     titleLabel.text = @"Fluorite Max • Standalone Engine";
     titleLabel.font = [UIFont systemFontOfSize:18 weight:UIFontWeightBold];
@@ -36,12 +31,35 @@
     subLabel.textAlignment = NSTextAlignmentCenter;
     [rootVC.view addSubview:subLabel];
     
-    // Initialize Fluorite Max Menu directly
+    // Load Brazilix tweak dylib
+    NSString *bundlePath = [[NSBundle mainBundle] bundlePath];
+    NSString *dylibPath = [bundlePath stringByAppendingPathComponent:@"Brazilix.dylib"];
+    
+    void *handle = dlopen([dylibPath UTF8String], RTLD_NOW | RTLD_GLOBAL);
+    if (!handle) {
+        NSLog(@"[FluoriteMax] dlopen error: %s", dlerror());
+    } else {
+        NSLog(@"[FluoriteMax] Loaded Brazilix.dylib successfully");
+    }
+    
+    // Trigger Menu Initialization
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        BrazilixMenu *menu = [BrazilixMenu new];
-        [menu setupDisplayLink];
-        [menu initTapGes];
-        [menu openMenu];
+        Class menuClass = NSClassFromString(@"BrazilixMenu");
+        if (menuClass) {
+            id menu = [menuClass new];
+            #pragma clang diagnostic push
+            #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+            if ([menu respondsToSelector:NSSelectorFromString(@"setupDisplayLink")]) {
+                [menu performSelector:NSSelectorFromString(@"setupDisplayLink")];
+            }
+            if ([menu respondsToSelector:NSSelectorFromString(@"initTapGes")]) {
+                [menu performSelector:NSSelectorFromString(@"initTapGes")];
+            }
+            if ([menu respondsToSelector:NSSelectorFromString(@"openMenu")]) {
+                [menu performSelector:NSSelectorFromString(@"openMenu")];
+            }
+            #pragma clang diagnostic pop
+        }
     });
     
     return YES;
