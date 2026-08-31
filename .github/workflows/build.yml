@@ -11,8 +11,6 @@ jobs:
   build:
     name: Build Tweak (.deb) & Standalone App (.ipa)
     runs-on: macos-14
-    env:
-      DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
 
     steps:
       - name: Checkout Repository
@@ -20,29 +18,45 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Configure Developer Environment
-        run: |
-          sudo xcode-select -switch /Applications/Xcode.app || true
-          echo "Active Developer Dir: $(xcode-select -p)"
-          SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path)
-          echo "iOS SDK Path: $SDKPATH"
-
       - name: Install Build Tools
         run: |
           brew install ldid dpkg || true
 
+      - name: Setup Theos & iOS SDK
+        run: |
+          git clone --recursive https://github.com/theos/theos.git ~/theos
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/theos/sdks.git ~/theos-sdks
+          cd ~/theos-sdks
+          git sparse-checkout set iPhoneOS16.5.sdk
+          cp -R iPhoneOS16.5.sdk ~/theos/sdks/
+          cd ..
+          rm -rf ~/theos-sdks
+          ls -la ~/theos/sdks/
+
+      - name: Build Tweak Package (.deb)
+        run: |
+          export THEOS=$HOME/theos
+          make clean || true
+          make package FINALPACKAGE=1 || true
+          ls -la packages/ || true
+
       - name: Build Standalone IPA (.ipa)
         run: |
-          SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path)
-          echo "Building standalone app with SDK: $SDKPATH"
+          SDKPATH="$HOME/theos/sdks/iPhoneOS16.5.sdk"
+          if [ ! -d "$SDKPATH" ]; then
+            SDKPATH=$(xcrun --sdk iphoneos --show-sdk-path)
+          fi
+          echo "Using SDK at: $SDKPATH"
           
           # Clean and setup directories
           rm -rf build output_ipa
           mkdir -p build/Payload/FluoriteMax.app
           mkdir -p output_ipa
           
-          # Compile standalone App executable targeting iOS arm64
-          clang++ -target arm64-apple-ios14.0 \
+          # Compile standalone App executable with iOS SDK
+          clang++ -arch arm64 \
             -isysroot "$SDKPATH" \
             -miphoneos-version-min=14.0 \
             -std=c++17 -fobjc-arc -O2 \
@@ -88,8 +102,8 @@ jobs:
           </plist>
           EOF
           
-          # Ad-hoc sign binary
-          codesign -s - --force build/Payload/FluoriteMax.app/FluoriteMax || ldid -S build/Payload/FluoriteMax.app/FluoriteMax || true
+          # Sign binary with ldid or codesign
+          ldid -S build/Payload/FluoriteMax.app/FluoriteMax || codesign -s - --force build/Payload/FluoriteMax.app/FluoriteMax || true
           
           # Package IPA
           cd build
@@ -97,27 +111,6 @@ jobs:
           cd ..
           cp build/FluoriteMax.ipa output_ipa/FluoriteMax.ipa
           ls -la output_ipa/
-
-      - name: Setup Theos
-        run: |
-          git clone --recursive https://github.com/theos/theos.git ~/theos
-          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
-
-      - name: Setup iOS SDK for Theos
-        run: |
-          git clone --depth 1 --filter=blob:none --sparse https://github.com/theos/sdks.git ~/theos-sdks
-          cd ~/theos-sdks
-          git sparse-checkout set iPhoneOS16.5.sdk
-          cp -R iPhoneOS16.5.sdk ~/theos/sdks/
-          cd ..
-          rm -rf ~/theos-sdks
-
-      - name: Build Tweak Package (.deb)
-        run: |
-          export THEOS=$HOME/theos
-          make clean || true
-          make package FINALPACKAGE=1 || true
-          ls -la packages/ || true
 
       - name: Upload Standalone .ipa Artifact
         uses: actions/upload-artifact@v4

@@ -11,7 +11,6 @@
 #import "Includes/UnityTypes.h"
 #import "Includes/MemoryUtils.h"
 #import "Includes/ESP.h"
-#import "Includes/Encryption.h"
 
 #define kWidth  [UIScreen mainScreen].bounds.size.width
 #define kHeight [UIScreen mainScreen].bounds.size.height
